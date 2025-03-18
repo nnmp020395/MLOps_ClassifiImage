@@ -18,4 +18,4 @@ jobs:
         aws-region: us-east-1  # Change this to your region of your bucket
 
     - name: Sync to S3
-      run: aws s3 sync . s3://image-dandelion-grass # Change this to your bucket name
+      run: aws s3 sync . s3://image-dadelion-grass # Change this to your bucket name
