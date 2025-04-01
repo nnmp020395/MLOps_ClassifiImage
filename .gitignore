@@ -177,5 +177,5 @@ cython_debug/
 *.env
 config.json
 
-# .gitignore
-notebooks/dinov2_classifier.pth
+# Ignore all .pth files
+*.pth
