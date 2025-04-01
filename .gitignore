@@ -178,4 +178,4 @@ cython_debug/
 config.json
 
 # .gitignore
-*.pth
+notebooks/dinov2_classifier.pth
