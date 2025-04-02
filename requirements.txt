@@ -1,0 +1,2 @@
+# dépendances pour le fonctionnement de airflow avec mlflow
+mlflow==2.7.0
