@@ -1,5 +1,5 @@
 torch
 torchvision
 s3fs
-mlflow
+mlflow==2.7.0
 pillow
