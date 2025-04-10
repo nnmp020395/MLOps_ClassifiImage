@@ -1,5 +1,5 @@
 torch
 torchvision
-numpy
-Pillow
-matplotlib
+s3fs
+mlflow
+pillow
