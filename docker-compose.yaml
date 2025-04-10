@@ -17,6 +17,7 @@ x-airflow-common:
     - ./dags/:/opt/airflow/dags
     - ./logs/:/opt/airflow/logs
     - ./plugins/:/opt/airflow/plugins
+    - ./src/:/opt/airflow/src #+++
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -115,14 +116,34 @@ services:
       - -c
       - airflow
 
-  mlflow-server:
+  mlflow-server: #+++
     build:
       context: .
       dockerfile: Dockerfile.mlflow
     ports:
-      - 5000:5000
+      - 5001:6000
     volumes:
       - mlflow-data:/mlflow
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   
+  mlflow-tracking: #+++
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
+    ports:
+      - "5002:6000" 
+    depends_on:
+      mlflow-server:
+        condition: service_healthy
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow-server:6000 
+
+
 volumes:
   mlflow-data:
+

@@ -14,17 +14,24 @@ import mlflow.pytorch
 # ------------------ LOGGING ------------------
 logging.basicConfig(level=logging.INFO, \
                     format="%(asctime)s - %(levelname)s - %(message)s")
+logging.info("Bienvenu dans le script d'entraînement!")
 
 # ------------------ MLFLOW CONFIG ------------------
+logging.info("Configuration de MLflow.")
+
 mlflow.set_tracking_uri("http://137.194.250.29:5001")
 mlflow.set_experiment("DINOv2_Classifier")
 
 # ------------------ HYPERPARAMETERS ------------------
+logging.info("Configuration des hyperparamètres.")
+
 batch_size = 32
 lr = 0.003
 num_epochs = 10
 
 # ------------------ TRANSFORMATIONS ------------------
+logging.info("Configuration des transformations.")
+
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -32,6 +39,8 @@ transform = transforms.Compose([
 ])
 
 # ------------------ CUSTOM S3 DATASET ------------------
+logging.info("Configuration du Dataset S3.")
+
 class S3ImageFolder(Dataset):
     def __init__(self, s3_root, transform=None):
         self.s3 = s3fs.S3FileSystem()
@@ -61,6 +70,8 @@ class S3ImageFolder(Dataset):
         return img, label
 
 # ------------------ LOAD DATA FROM S3 ------------------
+logging.info("Chargement des données depuis S3.")
+
 root_train = "s3://image-dadelion-grass/train"
 root_val = "s3://image-dadelion-grass/val"
 
@@ -73,6 +84,8 @@ val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
 logging.info(f"Classes trouvées : {train_data.class_to_idx}")
 
 # ------------------ DEVICE & MODEL ------------------
+logging.info("Configuration du modèle et du device.")
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 dino_backbone = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
 
@@ -96,9 +109,12 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.head.parameters(), lr=lr)
 
 # ------------------ TRAINING LOOP ------------------
+logging.info("Début de l'entraînement + enregistrement.")
+
 with mlflow.start_run():
 
     # Enregistrement des hyperparamètres
+    logging.info("Enregistrement des hyperparamètres dans MLflow.")
     mlflow.log_params({
         "learning_rate": lr,
         "batch_size": batch_size,
@@ -125,6 +141,7 @@ with mlflow.start_run():
         train_acc = 100 * correct / len(train_data)
 
         # Enregistrement des métriques
+        logging.info("Enregistrement des métriques dans MLflow.")
         mlflow.log_metric("train_accuracy", train_acc, step=epoch)
         mlflow.log_metric("train_loss", total_loss, step=epoch)
         
@@ -144,8 +161,10 @@ with mlflow.start_run():
             val_total += labels.size(0)
 
     val_acc = 100 * val_correct / val_total
+    logging.info("Enregistrement des métriques de validation dans MLflow.")
     mlflow.log_metric("val_accuracy", val_acc)
     logging.info(f"Validation Accuracy = {val_acc:.2f}%")
+
 
     # ------------------ SAVE MODEL ------------------
     mlflow.pytorch.log_model(model, artifact_path="model")
