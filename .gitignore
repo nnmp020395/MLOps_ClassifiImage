@@ -182,3 +182,6 @@ config.json
 
 # Ignore les logs 
 logs/
+
+# Ignore les métadonnées macOS
+.DS_Store
