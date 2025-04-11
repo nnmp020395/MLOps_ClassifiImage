@@ -12,6 +12,8 @@ x-airflow-common:
     AIRFLOW__API__ACCESS_CONTROL_ALLOW_METHODS: 'GET, POST, OPTIONS, DELETE'
     AIRFLOW__API__ACCESS_CONTROL_ALLOW_ORIGINS: '*'
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow # If no AIRFLOW__DATABASE__SQL_ALCHEMY_CONN variable is set then SQLite database is created in ${AIRFLOW_HOME}/airflow.db.
+    AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID} # +++
+    AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY} # +++
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
   volumes:
     - ./dags/:/opt/airflow/dags
@@ -129,19 +131,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-
-  
-  mlflow-tracking: #+++
-    build:
-      context: .
-      dockerfile: Dockerfile.mlflow
-    ports:
-      - "5002:6000" 
-    depends_on:
-      mlflow-server:
-        condition: service_healthy
-    environment:
-      MLFLOW_TRACKING_URI: http://mlflow-server:6000 
 
 
 volumes:
