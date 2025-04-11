@@ -12,6 +12,7 @@ from torch import optim
 import mlflow
 import mlflow.pytorch
 import socket
+import time
 
 
 # ------------------ LOGGING ------------------
@@ -111,11 +112,13 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.head.parameters(), lr=lr)
 
 # ------------------ TRAINING ------------------
+start_time = time.time()
+
 with mlflow.start_run(run_name=run_name):
 
     mlflow.set_tags({
-    "source": run_name,
-    "host": socket.gethostname()
+        "source": run_name,
+        "host": socket.gethostname()
     })
 
     mlflow.log_params({
@@ -142,10 +145,10 @@ with mlflow.start_run(run_name=run_name):
         acc = 100 * correct / len(train_dataset)
         mlflow.log_metric("train_accuracy", acc, step=epoch)
         mlflow.log_metric("train_loss", total_loss, step=epoch)
-        logging.info(f"Epoch {epoch} - Loss: {total_loss:.2f}, Accuracy: {acc:.2f}%")
+        logging.info(f"Epoch {epoch:02d} - Loss: {total_loss:.4f}, Accuracy: {acc:.2f}%")
 
     # ------------------ VALIDATION ------------------
-    logging.info("\n Evaluation du modèle...")
+    logging.info("\n Évaluation du modèle...")
     model.eval()
     val_correct, val_total = 0, 0
     with torch.no_grad():
@@ -159,7 +162,13 @@ with mlflow.start_run(run_name=run_name):
     mlflow.log_metric("val_accuracy", val_acc)
     logging.info(f"Validation Accuracy = {val_acc:.2f}%")
 
+    # ------------------ SAVE MODEL ------------------
     mlflow.pytorch.log_model(model, artifact_path="model")
     logging.info("Modèle loggé avec MLflow.")
-    
+
+    # ------------------ DURATION ------------------
+    duration = time.time() - start_time
+    mlflow.log_metric("duration", duration)
+    logging.info(f"Durée d'exécution du run : {duration:.2f} secondes.")
+
 mlflow.end_run()
