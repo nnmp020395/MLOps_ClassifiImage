@@ -7,56 +7,62 @@ from torch.utils.data import DataLoader, Dataset
 from PIL import Image
 import logging
 import s3fs
+import random
 from torch import optim
 import mlflow
 import mlflow.pytorch
+import socket
+
 
 # ------------------ LOGGING ------------------
-logging.basicConfig(level=logging.INFO, \
-                    format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logging.info("Bienvenu dans le script d'entraînement!")
 
-# ------------------ MLFLOW CONFIG ------------------
-logging.info("Configuration de MLflow.")
+# Détection du contexte d'exécution
+if "AIRFLOW_CTX_DAG_ID" in os.environ:
+    run_name = "dag_run"
+else:
+    run_name = "local_run"
 
+# ------------------ MLFLOW CONFIG ------------------
 mlflow.set_tracking_uri("http://137.194.250.29:5001")
 mlflow.set_experiment("DINOv2_Classifier")
 
 # ------------------ HYPERPARAMETERS ------------------
-logging.info("Configuration des hyperparamètres.")
-
 batch_size = 32
 lr = 0.003
 num_epochs = 10
 
 # ------------------ TRANSFORMATIONS ------------------
-logging.info("Configuration des transformations.")
-
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.485, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-# ------------------ CUSTOM S3 DATASET ------------------
-logging.info("Configuration du Dataset S3.")
+# ------------------ SPLIT FUNCTION ------------------
+def split_samples(s3_root, classes, split_ratio=0.7):
+    fs = s3fs.S3FileSystem()
+    train_samples = []
+    val_samples = []
+    class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
 
+    for cls in classes:
+        class_path = f"{s3_root}/{cls}"
+        files = [f for f in fs.ls(class_path) if f.lower().endswith((".jpg", ".jpeg", ".png"))]
+        random.shuffle(files)
+        split_idx = int(len(files) * split_ratio)
+        train_samples += [(f, class_to_idx[cls]) for f in files[:split_idx]]
+        val_samples += [(f, class_to_idx[cls]) for f in files[split_idx:]]
+
+    return train_samples, val_samples, class_to_idx
+
+# ------------------ DATASET CLASS ------------------
 class S3ImageFolder(Dataset):
-    def __init__(self, s3_root, transform=None):
+    def __init__(self, samples, transform=None):
         self.s3 = s3fs.S3FileSystem()
-        self.root = s3_root.rstrip('/')
+        self.samples = samples
         self.transform = transform
-        self.classes = sorted(self.s3.ls(self.root))
-        self.class_to_idx = {cls.split('/')[-1]: i for i, \
-                             cls in enumerate(self.classes)}
-        self.samples = []
-
-        for class_path in self.classes:
-            files = self.s3.ls(class_path)
-            for f in files:
-                if f.lower().endswith((".jpg", ".jpeg", ".png")):
-                    self.samples.append((f, \
-                        self.class_to_idx[class_path.split("/")[-1]]))
 
     def __len__(self):
         return len(self.samples)
@@ -69,23 +75,20 @@ class S3ImageFolder(Dataset):
             img = self.transform(img)
         return img, label
 
-# ------------------ LOAD DATA FROM S3 ------------------
-logging.info("Chargement des données depuis S3.")
+# ------------------ LOAD DATA ------------------
+s3_root = "s3://image-dadelion-grass"
+classes = ["dandelion", "grass"]
+train_samples, val_samples, class_to_idx = split_samples(s3_root, classes)
 
-root_train = "s3://image-dadelion-grass/train"
-root_val = "s3://image-dadelion-grass/val"
+logging.info(f"Classes trouvées : {class_to_idx}")
+logging.info(f"Nb images train: {len(train_samples)}, val: {len(val_samples)}")
 
-train_data = S3ImageFolder(s3_root=root_train, transform=transform)
-val_data = S3ImageFolder(s3_root=root_val, transform=transform)
+train_dataset = S3ImageFolder(train_samples, transform)
+val_dataset = S3ImageFolder(val_samples, transform)
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
-
-logging.info(f"Classes trouvées : {train_data.class_to_idx}")
-
-# ------------------ DEVICE & MODEL ------------------
-logging.info("Configuration du modèle et du device.")
-
+# ------------------ MODEL ------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 dino_backbone = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
 
@@ -101,20 +104,20 @@ class DinoClassifier(nn.Module):
     def forward(self, x):
         with torch.no_grad():
             x = self.backbone(x)
-        x = self.head(x)
-        return x
+        return self.head(x)
 
 model = DinoClassifier(dino_backbone, num_classes=2).to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.head.parameters(), lr=lr)
 
-# ------------------ TRAINING LOOP ------------------
-logging.info("Début de l'entraînement + enregistrement.")
+# ------------------ TRAINING ------------------
+with mlflow.start_run(run_name=run_name):
 
-with mlflow.start_run():
+    mlflow.set_tags({
+    "source": run_name,
+    "host": socket.gethostname()
+    })
 
-    # Enregistrement des hyperparamètres
-    logging.info("Enregistrement des hyperparamètres dans MLflow.")
     mlflow.log_params({
         "learning_rate": lr,
         "batch_size": batch_size,
@@ -124,9 +127,7 @@ with mlflow.start_run():
 
     for epoch in range(num_epochs):
         model.train()
-        total_loss = 0
-        correct = 0
-
+        total_loss, correct = 0, 0
         for images, labels in train_loader:
             images, labels = images.to(device), labels.to(device)
             optimizer.zero_grad()
@@ -138,21 +139,15 @@ with mlflow.start_run():
             total_loss += loss.item()
             correct += (outputs.argmax(dim=1) == labels).sum().item()
 
-        train_acc = 100 * correct / len(train_data)
-
-        # Enregistrement des métriques
-        logging.info("Enregistrement des métriques dans MLflow.")
-        mlflow.log_metric("train_accuracy", train_acc, step=epoch)
+        acc = 100 * correct / len(train_dataset)
+        mlflow.log_metric("train_accuracy", acc, step=epoch)
         mlflow.log_metric("train_loss", total_loss, step=epoch)
-        
-        logging.info(f"Epoch {epoch} - Loss: {total_loss:.2f}, \
-                     Accuracy: {train_acc:.2f}%")
+        logging.info(f"Epoch {epoch} - Loss: {total_loss:.2f}, Accuracy: {acc:.2f}%")
 
     # ------------------ VALIDATION ------------------
+    logging.info("\n Evaluation du modèle...")
     model.eval()
-    val_correct = 0
-    val_total = 0
-
+    val_correct, val_total = 0, 0
     with torch.no_grad():
         for images, labels in val_loader:
             images, labels = images.to(device), labels.to(device)
@@ -161,11 +156,10 @@ with mlflow.start_run():
             val_total += labels.size(0)
 
     val_acc = 100 * val_correct / val_total
-    logging.info("Enregistrement des métriques de validation dans MLflow.")
     mlflow.log_metric("val_accuracy", val_acc)
     logging.info(f"Validation Accuracy = {val_acc:.2f}%")
 
-
-    # ------------------ SAVE MODEL ------------------
     mlflow.pytorch.log_model(model, artifact_path="model")
     logging.info("Modèle loggé avec MLflow.")
+    
+mlflow.end_run()
