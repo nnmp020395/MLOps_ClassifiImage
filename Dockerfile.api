@@ -1,0 +1,25 @@
+# Image de base légère avec Python
+FROM python:3.9-slim
+
+# Définir le dossier de travail
+WORKDIR /app
+
+# Installer git pour torch.hub et autres dépendances système
+RUN apt-get update && \
+    apt-get install -y git && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copier les fichiers nécessaires
+COPY requirements.txt .
+COPY src/ ./src/
+COPY api/src/main.py ./main.py
+COPY dinov2_classifier.pth ./dinov2_classifier.pth
+
+# Installer les dépendances Python
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Exposer le port pour FastAPI
+EXPOSE 8000
+
+# Démarrer le serveur FastAPI
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
