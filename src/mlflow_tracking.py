@@ -13,13 +13,13 @@ import mlflow
 import mlflow.pytorch
 import socket
 import time
-
+from mlflow.tracking import MlflowClient
 
 # ------------------ LOGGING ------------------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logging.info("Bienvenu dans le script d'entraînement!")
+logging.info("Bienvenue dans le script d'entraînement!")
 
-# Détection du contexte d'exécution
+# ------------------ CONTEXTE ------------------
 if "AIRFLOW_CTX_DAG_ID" in os.environ:
     run_name = "dag_run"
 else:
@@ -29,7 +29,20 @@ else:
 mlflow.set_tracking_uri("http://137.194.250.29:5001")
 mlflow.set_experiment("DINOv2_Classifier")
 
-# ------------------ HYPERPARAMETERS ------------------
+# Ajout de la description de l'expérience
+experiment_name = "DINOv2_Classifier"
+description = (
+    "Classification d'images entre 'dandelion' et 'grass' avec DINOv2.\n"
+    )
+client = MlflowClient()
+experiment = client.get_experiment_by_name(experiment_name)
+if experiment:
+    client.update_experiment(experiment.experiment_id, description=description)
+    logging.info(f"Description de l'expérience '{experiment_name}' mise à jour.")
+else:
+    logging.warning(f"L'expérience '{experiment_name}' n'existe pas.")
+
+# ------------------ HYPERPARAMÈTRES ------------------
 batch_size = 32
 lr = 0.003
 num_epochs = 10
@@ -44,8 +57,7 @@ transform = transforms.Compose([
 # ------------------ SPLIT FUNCTION ------------------
 def split_samples(s3_root, classes, split_ratio=0.7):
     fs = s3fs.S3FileSystem()
-    train_samples = []
-    val_samples = []
+    train_samples, val_samples = [], []
     class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
 
     for cls in classes:
@@ -72,11 +84,9 @@ class S3ImageFolder(Dataset):
         path, label = self.samples[idx]
         with self.s3.open(path, 'rb') as f:
             img = Image.open(io.BytesIO(f.read())).convert("RGB")
-        if self.transform:
-            img = self.transform(img)
-        return img, label
+        return self.transform(img), label if self.transform else img, label
 
-# ------------------ LOAD DATA ------------------
+# ------------------ CHARGEMENT DES DONNÉES ------------------
 s3_root = "s3://image-dadelion-grass"
 classes = ["dandelion", "grass"]
 train_samples, val_samples, class_to_idx = split_samples(s3_root, classes)
@@ -89,7 +99,7 @@ val_dataset = S3ImageFolder(val_samples, transform)
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-# ------------------ MODEL ------------------
+# ------------------ MODÈLE ------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 dino_backbone = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
 
@@ -111,7 +121,7 @@ model = DinoClassifier(dino_backbone, num_classes=2).to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.head.parameters(), lr=lr)
 
-# ------------------ TRAINING ------------------
+# ------------------ ENTRAÎNEMENT ------------------
 start_time = time.time()
 
 with mlflow.start_run(run_name=run_name):
@@ -131,6 +141,7 @@ with mlflow.start_run(run_name=run_name):
     for epoch in range(num_epochs):
         model.train()
         total_loss, correct = 0, 0
+
         for images, labels in train_loader:
             images, labels = images.to(device), labels.to(device)
             optimizer.zero_grad()
@@ -148,9 +159,10 @@ with mlflow.start_run(run_name=run_name):
         logging.info(f"Epoch {epoch:02d} - Loss: {total_loss:.4f}, Accuracy: {acc:.2f}%")
 
     # ------------------ VALIDATION ------------------
-    logging.info("\n Évaluation du modèle...")
+    logging.info("\nÉvaluation du modèle...")
     model.eval()
     val_correct, val_total = 0, 0
+
     with torch.no_grad():
         for images, labels in val_loader:
             images, labels = images.to(device), labels.to(device)
@@ -164,11 +176,12 @@ with mlflow.start_run(run_name=run_name):
 
     # ------------------ SAVE MODEL ------------------
     mlflow.pytorch.log_model(model, artifact_path="model")
-    logging.info("Modèle loggé avec MLflow.")
+    torch.save(model.state_dict(), "dinov2_classifier.pth")
+    logging.info("Modèle loggé avec MLflow et sauvegardé sous 'dinov2_classifier.pth'.")
 
     # ------------------ DURATION ------------------
     duration = time.time() - start_time
     mlflow.log_metric("duration", duration)
-    logging.info(f"Durée d'exécution du run : {duration:.2f} secondes.")
+    logging.info(f"Durée d'exécution : {duration:.2f} secondes.")
 
 mlflow.end_run()
