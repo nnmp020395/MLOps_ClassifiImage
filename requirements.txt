@@ -1,5 +1,8 @@
+fastapi
 torch
 torchvision
 s3fs
 mlflow==2.7.0
 pillow
+uvicorn
+python-multipart
