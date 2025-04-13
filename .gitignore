@@ -173,6 +173,18 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# Ignore airflow logs and plugins
+# .gitignore
+*.env
+config.json
+
+# Ignore all .pth files
+*.pth
+
+# Ignore les logs
 logs/
+
+# Ignore les métadonnées macOS
+.DS_Store
+
+# Ignore les plugins
 plugins/

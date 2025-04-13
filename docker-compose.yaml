@@ -20,6 +20,7 @@ x-airflow-common:
     - ./dags/:/opt/airflow/dags
     - ./logs/:/opt/airflow/logs
     - ./plugins/:/opt/airflow/plugins
+    - ./src/:/opt/airflow/src #+++
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -118,14 +119,34 @@ services:
       - -c
       - airflow
 
-  mlflow-server:
+  mlflow-server: #+++
     build:
       context: .
       dockerfile: Dockerfile.mlflow
     ports:
-      - 5000:5000
+      - 5001:6000
     volumes:
       - mlflow-data:/mlflow
-  
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  fastapi-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./dinov2_classifier.pth:/app/dinov2_classifier.pth
+    depends_on:
+      - mlflow-server
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+
 volumes:
   mlflow-data:

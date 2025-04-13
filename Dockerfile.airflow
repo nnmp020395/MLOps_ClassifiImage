@@ -18,11 +18,10 @@ RUN apt-get update && apt-get install -y \
 USER airflow
 
 # Upgrade pip and install specific versions of setuptools and wheel
-RUN pip install --upgrade pip 
+RUN pip install --upgrade pip
 #    && pip install setuptools==75.8.0 wheel==0.45.1
 
 # install additional requirements
 COPY requirements.txt /tmp/requirements.txt
 
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
-
