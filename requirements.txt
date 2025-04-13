@@ -6,3 +6,5 @@ mlflow==2.7.0
 pillow
 uvicorn
 python-multipart
+streamlit
+requests
