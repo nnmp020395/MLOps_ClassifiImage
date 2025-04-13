@@ -5,8 +5,8 @@ from airflow.operators.empty import EmptyOperator
 from airflow.hooks.base import BaseHook
 from sqlalchemy import create_engine#, text
 import logging
-from lib.create_table_from_url import url_to_sql
-from lib.store_images import process_images
+from utils.create_table_from_url import url_to_sql
+from utils.store_images import process_images
 import os
 
 
