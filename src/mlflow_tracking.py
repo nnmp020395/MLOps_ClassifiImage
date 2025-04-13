@@ -1,22 +1,35 @@
-import os
+"""
+Script pour l'entraînement et le suivi des expériences avec MLflow.
+
+Ce fichier configure MLflow pour suivre les expériences d'entraînement d'un
+modèle de classification d'images basé sur DinoV2. Les étapes incluent :
+1. Configuration de l'URI de suivi MLflow.
+2. Définition et mise à jour des expériences MLflow.
+3. Enregistrement des métriques, paramètres et modèles.
+"""
+
 import io
+import logging
+import os
+import random
+import socket
+import time
+
+import mlflow
+import mlflow.pytorch
+import s3fs
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
-from torch.utils.data import DataLoader, Dataset
-from PIL import Image
-import logging
-import s3fs
-import random
-from torch import optim
-import mlflow
-import mlflow.pytorch
-import socket
-import time
 from mlflow.tracking import MlflowClient
+from PIL import Image
+from torch import optim
+from torch.utils.data import DataLoader, Dataset
 
 # ------------------ LOGGING ------------------
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logging.info("Bienvenue dans le script d'entraînement!")
 
 # ------------------ CONTEXTE ------------------
@@ -31,9 +44,7 @@ mlflow.set_experiment("DINOv2_Classifier")
 
 # Ajout de la description de l'expérience
 experiment_name = "DINOv2_Classifier"
-description = (
-    "Classification d'images entre 'dandelion' et 'grass' avec DINOv2.\n"
-    )
+description = "Classification d'images entre 'dandelion' et 'grass' avec DINOv2.\n"
 client = MlflowClient()
 experiment = client.get_experiment_by_name(experiment_name)
 if experiment:
@@ -48,21 +59,38 @@ lr = 0.003
 num_epochs = 10
 
 # ------------------ TRANSFORMATIONS ------------------
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.485, 0.406], std=[0.229, 0.224, 0.225])
-])
+transform = transforms.Compose(
+    [
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.485, 0.406], std=[0.229, 0.224, 0.225]),
+    ]
+)
 
-# ------------------ SPLIT FUNCTION ------------------
+
 def split_samples(s3_root, classes, split_ratio=0.7):
+    """
+    Divise les images S3 en deux listes : entraînement et validation.
+
+    Args:
+        s3_root (str): Chemin racine dans S3.
+        classes (list): Liste des classes (ex: ['dandelion', 'grass']).
+        split_ratio (float): Proportion des données pour l'entraînement.
+
+    Returns:
+        tuple: train_samples, val_samples, class_to_idx
+    """
     fs = s3fs.S3FileSystem()
     train_samples, val_samples = [], []
     class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
 
     for cls in classes:
         class_path = f"{s3_root}/{cls}"
-        files = [f for f in fs.ls(class_path) if f.lower().endswith((".jpg", ".jpeg", ".png"))]
+        files = [
+            f
+            for f in fs.ls(class_path)
+            if f.lower().endswith((".jpg", ".jpeg", ".png"))
+        ]
         random.shuffle(files)
         split_idx = int(len(files) * split_ratio)
         train_samples += [(f, class_to_idx[cls]) for f in files[:split_idx]]
@@ -70,21 +98,47 @@ def split_samples(s3_root, classes, split_ratio=0.7):
 
     return train_samples, val_samples, class_to_idx
 
-# ------------------ DATASET CLASS ------------------
+
 class S3ImageFolder(Dataset):
+    """
+    Dataset personnalisé pour charger des images depuis S3.
+
+    Attributes:
+        samples (list): Liste de tuples (chemin S3, étiquette).
+        transform (callable): Transformations à appliquer aux images.
+    """
+
     def __init__(self, samples, transform=None):
+        """
+        Initialise le dataset S3ImageFolder.
+
+        Args:
+            samples (list): Liste de tuples (path, label).
+            transform (callable, optional): Transformations PyTorch.
+        """
         self.s3 = s3fs.S3FileSystem()
         self.samples = samples
         self.transform = transform
 
     def __len__(self):
+        """Retourne le nombre d'échantillons."""
         return len(self.samples)
 
     def __getitem__(self, idx):
+        """
+        Charge une image à partir de S3 et applique les transformations.
+
+        Args:
+            idx (int): Index de l'échantillon.
+
+        Returns:
+            tuple: image transformée, label
+        """
         path, label = self.samples[idx]
-        with self.s3.open(path, 'rb') as f:
+        with self.s3.open(path, "rb") as f:
             img = Image.open(io.BytesIO(f.read())).convert("RGB")
         return self.transform(img), label if self.transform else img, label
+
 
 # ------------------ CHARGEMENT DES DONNÉES ------------------
 s3_root = "s3://image-dadelion-grass"
@@ -106,16 +160,36 @@ dino_backbone = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
 for param in dino_backbone.parameters():
     param.requires_grad = False
 
+
 class DinoClassifier(nn.Module):
+    """
+    Classificateur DINOv2 personnalisé.
+
+    Args:
+        backbone (nn.Module): Backbone pré-entraîné (ex: DINOv2).
+        num_classes (int): Nombre de classes de sortie.
+    """
+
     def __init__(self, backbone, num_classes):
+        """Initialise le classificateur avec un backbone et une couche de sortie."""
         super().__init__()
         self.backbone = backbone
         self.head = nn.Linear(backbone.embed_dim, num_classes)
 
     def forward(self, x):
+        """
+        Applique le backbone DINO suivi de la couche de classification.
+
+        Args:
+            x (torch.Tensor): Batch d’images.
+
+        Returns:
+            torch.Tensor: Logits de classification.
+        """
         with torch.no_grad():
             x = self.backbone(x)
         return self.head(x)
+
 
 model = DinoClassifier(dino_backbone, num_classes=2).to(device)
 criterion = nn.CrossEntropyLoss()
@@ -125,18 +199,16 @@ optimizer = optim.Adam(model.head.parameters(), lr=lr)
 start_time = time.time()
 
 with mlflow.start_run(run_name=run_name):
+    mlflow.set_tags({"source": run_name, "host": socket.gethostname()})
 
-    mlflow.set_tags({
-        "source": run_name,
-        "host": socket.gethostname()
-    })
-
-    mlflow.log_params({
-        "learning_rate": lr,
-        "batch_size": batch_size,
-        "epochs": num_epochs,
-        "backbone": "dinov2_vits14"
-    })
+    mlflow.log_params(
+        {
+            "learning_rate": lr,
+            "batch_size": batch_size,
+            "epochs": num_epochs,
+            "backbone": "dinov2_vits14",
+        }
+    )
 
     for epoch in range(num_epochs):
         model.train()
@@ -156,10 +228,12 @@ with mlflow.start_run(run_name=run_name):
         acc = 100 * correct / len(train_dataset)
         mlflow.log_metric("train_accuracy", acc, step=epoch)
         mlflow.log_metric("train_loss", total_loss, step=epoch)
-        logging.info(f"Epoch {epoch:02d} - Loss: {total_loss:.4f}, Accuracy: {acc:.2f}%")
+        logging.info(
+            f"Epoch {epoch:02d} - Loss: {total_loss:.4f}, Accuracy: {acc:.2f}%"
+        )
 
     # ------------------ VALIDATION ------------------
-    logging.info("\nÉvaluation du modèle...")
+    logging.info("Évaluation du modèle...")
     model.eval()
     val_correct, val_total = 0, 0
 
@@ -176,8 +250,15 @@ with mlflow.start_run(run_name=run_name):
 
     # ------------------ SAVE MODEL ------------------
     mlflow.pytorch.log_model(model, artifact_path="model")
-    torch.save(model.state_dict(), "dinov2_classifier.pth")
-    logging.info("Modèle loggé avec MLflow et sauvegardé sous 'dinov2_classifier.pth'.")
+
+    fs = s3fs.S3FileSystem()
+    with fs.open("image-dadelion-grass/model/dinov2_classifier.pth", "wb") as f:
+        torch.save(model.state_dict(), f)
+
+    logging.info(
+        "Modèle loggé avec MLflow et sauvegardé dans le bucket S3 sous \
+            'model/dinov2_classifier.pth'."
+    )
 
     # ------------------ DURATION ------------------
     duration = time.time() - start_time

@@ -1,17 +1,29 @@
-import os
+"""
+Script d'entraînement local du modèle DINOv2 pour la classification d'images.
+
+Ce script :
+1. Charge les images depuis un bucket S3.
+2. Effectue un split entraînement/validation.
+3. Entraîne un modèle basé sur un backbone DINOv2 gelé.
+4. Évalue le modèle et le sauvegarde en local sous forme de fichier .pth.
+"""
+
 import io
+import logging
+import random
+
+import s3fs
 import torch
 import torch.nn as nn
-import logging
-import s3fs
-import random
-from PIL import Image
-from torch.utils.data import Dataset, DataLoader, Subset
 import torchvision.transforms as transforms
+from PIL import Image
 from torch import optim
+from torch.utils.data import DataLoader, Dataset, Subset
 
 # ------------------ LOGGING ------------------
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logging.info("Bienvenu dans le script d'entraînement!")
 
 # ------------------ HYPERPARAMÈTRES ------------------
@@ -20,22 +32,35 @@ lr = 0.003
 num_epochs = 10
 
 # ------------------ TRANSFORMATIONS ------------------
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.485, 0.406], std=[0.229, 0.224, 0.225])
-])
+transform = transforms.Compose(
+    [
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.485, 0.406], std=[0.229, 0.224, 0.225]),
+    ]
+)
+
 
 # ------------------ DATASET PERSO ------------------
 class S3ImageFolder(Dataset):
+    """
+    Dataset personnalisé pour lire les images depuis un bucket S3.
+
+    Args:
+        root_paths (list): Liste des chemins S3 pour chaque classe.
+        transform (callable, optional): Transformations à appliquer sur les images.
+    """
+
     def __init__(self, root_paths, transform=None):
+        """Initialise le dataset en scannant les répertoires S3 et en mappant \
+            les classes."""
         self.s3 = s3fs.S3FileSystem()
         self.transform = transform
         self.samples = []
         self.class_to_idx = {}
 
         for label_idx, s3_path in enumerate(sorted(root_paths)):
-            class_name = s3_path.rstrip('/').split('/')[-1]
+            class_name = s3_path.rstrip("/").split("/")[-1]
             self.class_to_idx[class_name] = label_idx
 
             files = self.s3.ls(s3_path)
@@ -44,34 +69,49 @@ class S3ImageFolder(Dataset):
                     self.samples.append((f, label_idx))
 
     def __len__(self):
+        """Retourne le nombre total d’échantillons."""
         return len(self.samples)
 
     def __getitem__(self, idx):
+        """
+        Récupère une image et son label à l'index donné.
+
+        Args:
+            idx (int): Index de l’image à récupérer.
+
+        Returns:
+            Tuple[Tensor, int]: Image transformée et son label associé.
+        """
         path, label = self.samples[idx]
-        with self.s3.open(path, 'rb') as f:
+        with self.s3.open(path, "rb") as f:
             image = Image.open(io.BytesIO(f.read())).convert("RGB")
         if self.transform:
             image = self.transform(image)
         return image, label
 
+
 # ------------------ CHARGEMENT & SPLIT ------------------
 logging.info("Chargement des données depuis S3 et split 70/30.")
-
-s3_paths = [
-    "s3://image-dadelion-grass/dandelion",
-    "s3://image-dadelion-grass/grass"
-]
-
+s3_paths = ["s3://image-dadelion-grass/dandelion", "s3://image-dadelion-grass/grass"]
 full_dataset = S3ImageFolder(s3_paths, transform=transform)
 
-# Split 70/30 de manière équilibrée
+
 def stratified_split(dataset, split_ratio=0.7):
+    """
+    Effectue une séparation équilibrée du dataset entre entraînement et validation.
+
+    Args:
+        dataset (Dataset): Dataset à splitter.
+        split_ratio (float): Ratio pour l'entraînement (ex: 0.7 = 70% entraînement).
+
+    Returns:
+        Tuple[Subset, Subset]: Deux sous-ensembles (train, validation).
+    """
     label_to_indices = {}
     for idx, (_, label) in enumerate(dataset.samples):
         label_to_indices.setdefault(label, []).append(idx)
 
     train_indices, val_indices = [], []
-
     for label, indices in label_to_indices.items():
         random.shuffle(indices)
         split = int(len(indices) * split_ratio)
@@ -80,8 +120,8 @@ def stratified_split(dataset, split_ratio=0.7):
 
     return Subset(dataset, train_indices), Subset(dataset, val_indices)
 
-train_data, val_data = stratified_split(full_dataset)
 
+train_data, val_data = stratified_split(full_dataset)
 train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
 
@@ -92,19 +132,40 @@ logging.info(f"Nb images train: {len(train_data)}, val: {len(val_data)}")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 dino_backbone = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
 
+# Gèle les poids du backbone pour ne pas les entraîner
 for param in dino_backbone.parameters():
     param.requires_grad = False
 
+
 class DinoClassifier(nn.Module):
+    """
+    Classificateur basé sur un backbone DINOv2 avec une tête de classification.
+
+    Args:
+        backbone (nn.Module): Modèle de features (ex: DINOv2).
+        num_classes (int): Nombre de classes de sortie.
+    """
+
     def __init__(self, backbone, num_classes):
+        """Initialise le classificateur avec un backbone gelé et une couche linéaire."""
         super().__init__()
         self.backbone = backbone
         self.head = nn.Linear(backbone.embed_dim, num_classes)
 
     def forward(self, x):
+        """
+        Propagation avant.
+
+        Args:
+            x (Tensor): Entrée image.
+
+        Returns:
+            Tensor: Logits du classificateur.
+        """
         with torch.no_grad():
             x = self.backbone(x)
         return self.head(x)
+
 
 model = DinoClassifier(dino_backbone, num_classes=2).to(device)
 criterion = nn.CrossEntropyLoss()
