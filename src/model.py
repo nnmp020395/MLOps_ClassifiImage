@@ -48,27 +48,28 @@ class DinoClassifier(nn.Module):
         x = self.head(x)
         return x
 
-    def load_model(model_path="dinov2_classifier.pth"):
-        """
-        Charge un modèle depuis un fichier local ou S3.
 
-        Args:
-            model_path (str): Chemin vers le modèle (chemin local ou s3://...).
+def load_model(model_path="dinov2_classifier.pth"):
+    """
+    Charge un modèle depuis un fichier local ou S3.
 
-        Returns:
-            DinoClassifier: Modèle chargé.
-        """
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        dino_backbone = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
-        model = DinoClassifier(dino_backbone, num_classes=2).to(device)
+    Args:
+        model_path (str): Chemin vers le modèle (chemin local ou s3://...).
 
-        if model_path.startswith("s3://"):
-            fs = s3fs.S3FileSystem()
-            with fs.open(model_path, "rb") as f:
-                buffer = io.BytesIO(f.read())
-                model.load_state_dict(torch.load(buffer, map_location="cpu"))
-        else:
-            model.load_state_dict(torch.load(model_path, map_location="cpu"))
+    Returns:
+        DinoClassifier: Modèle chargé.
+    """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    dino_backbone = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
+    model = DinoClassifier(dino_backbone, num_classes=2).to(device)
 
-        model.eval()
-        return model
+    if model_path.startswith("s3://"):
+        fs = s3fs.S3FileSystem()
+        with fs.open(model_path, "rb") as f:
+            buffer = io.BytesIO(f.read())
+            model.load_state_dict(torch.load(buffer, map_location="cpu"))
+    else:
+        model.load_state_dict(torch.load(model_path, map_location="cpu"))
+
+    model.eval()
+    return model

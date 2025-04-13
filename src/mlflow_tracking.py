@@ -39,7 +39,7 @@ else:
     run_name = "local_run"
 
 # ------------------ MLFLOW CONFIG ------------------
-mlflow.set_tracking_uri("http://137.194.250.29:5001")
+mlflow.set_tracking_uri("http://mlflow-server:6000")
 mlflow.set_experiment("DINOv2_Classifier")
 
 # Ajout de la description de l'expérience
@@ -48,7 +48,6 @@ description = "Classification d'images entre 'dandelion' et 'grass' avec DINOv2.
 client = MlflowClient()
 experiment = client.get_experiment_by_name(experiment_name)
 if experiment:
-    client.update_experiment(experiment.experiment_id, description=description)
     logging.info(f"Description de l'expérience '{experiment_name}' mise à jour.")
 else:
     logging.warning(f"L'expérience '{experiment_name}' n'existe pas.")
@@ -137,7 +136,9 @@ class S3ImageFolder(Dataset):
         path, label = self.samples[idx]
         with self.s3.open(path, "rb") as f:
             img = Image.open(io.BytesIO(f.read())).convert("RGB")
-        return self.transform(img), label if self.transform else img, label
+        if self.transform:
+            img = self.transform(img)
+        return img, label
 
 
 # ------------------ CHARGEMENT DES DONNÉES ------------------
