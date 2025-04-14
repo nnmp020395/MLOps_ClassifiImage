@@ -25,6 +25,9 @@ from mlflow.tracking import MlflowClient
 from PIL import Image
 from torch import optim
 from torch.utils.data import DataLoader, Dataset
+import matplotlib.pyplot as plt
+from sklearn.metrics import roc_curve, auc
+
 
 # ------------------ LOGGING ------------------
 logging.basicConfig(
@@ -237,10 +240,12 @@ with mlflow.start_run(run_name=run_name):
     logging.info("Évaluation du modèle...")
     model.eval()
     val_correct, val_total = 0, 0
+    all_labels, all_outputs = [], []
 
     with torch.no_grad():
         for images, labels in val_loader:
             images, labels = images.to(device), labels.to(device)
+            all_labels.extend(labels.cpu().numpy())
             outputs = model(images)
             val_correct += (outputs.argmax(1) == labels).sum().item()
             val_total += labels.size(0)
@@ -248,6 +253,26 @@ with mlflow.start_run(run_name=run_name):
     val_acc = 100 * val_correct / val_total
     mlflow.log_metric("val_accuracy", val_acc)
     logging.info(f"Validation Accuracy = {val_acc:.2f}%")
+
+    # ------------------ ROC CURVE ------------------
+    fpr, tpr, _ = roc_curve(all_labels, all_outputs)
+    roc_auc = auc(fpr, tpr)
+    mlflow.log_metric("roc_auc", roc_auc)
+    logging.info(f"AUC: {roc_auc:.4f}")
+
+    # Plot the ROC curve
+    plt.figure()
+    plt.plot(fpr, tpr, color="blue", label=f"AUC = {roc_auc:.4f}")
+    plt.plot([0, 1], [0, 1], color="k", linestyle="--")
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("ROC Curve")
+    plt.legend(loc="lower right")
+    plt.savefig("roc_curve.png")
+    plt.close()
+
+    mlflow.log_artifact("roc_curve.png", artifact_path="roc_curve")
+    logging.info("Courbe ROC as an artifact in MLflow")
 
     # ------------------ SAVE MODEL ------------------
     mlflow.pytorch.log_model(model, artifact_path="model")
