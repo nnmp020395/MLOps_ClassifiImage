@@ -2,7 +2,7 @@ x-airflow-common:
   &airflow-common
   #image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.8.2}
   build:
-    context: .
+    context: ./airflow
     dockerfile: Dockerfile.airflow
   environment:
     &airflow-common-env
@@ -17,9 +17,9 @@ x-airflow-common:
     AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
     AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
   volumes:
-    - ./dags/:/opt/airflow/dags
-    - ./logs/:/opt/airflow/logs
-    - ./plugins/:/opt/airflow/plugins
+    - ./airflow/dags/:/opt/airflow/dags
+    - ./airflow/logs/:/opt/airflow/logs
+    - ./airflow/plugins/:/opt/airflow/plugins
     - ./src/:/opt/airflow/src #+++
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
@@ -104,7 +104,7 @@ services:
       _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "0:0"
     volumes:
-      - .:/sources
+      - ./airflow:/sources
 
   airflow-cli:
     <<: *airflow-common
@@ -121,7 +121,7 @@ services:
 
   mlflow-server: #+++
     build:
-      context: .
+      context: ./mlflow
       dockerfile: Dockerfile.mlflow
     ports:
       - 5001:6000
@@ -136,16 +136,23 @@ services:
   fastapi-api:
     build:
       context: .
-      dockerfile: Dockerfile.api
+      dockerfile: ./api/Dockerfile.api
     ports:
       - "8000:8000"
     volumes:
-      - ./dinov2_classifier.pth:/app/dinov2_classifier.pth
+      - ./api/dinov2_classifier.pth:/app/dinov2_classifier.pth
     depends_on:
       - mlflow-server
     environment:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+  streamlit:
+    build:
+      context: ./streamlit
+      dockerfile: Dockerfile.streamlit
+    ports:
+      - "8501:8501"
 
 
 volumes:

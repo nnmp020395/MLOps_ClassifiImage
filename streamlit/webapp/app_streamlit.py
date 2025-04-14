@@ -5,8 +5,9 @@ Cette application permet de téléverser une image et d'obtenir une prédiction
 via une API FastAPI.
 """
 import requests
-import streamlit as st
 from PIL import Image
+
+import streamlit as st
 
 st.set_page_config(page_title="Prédiction DINOv2", layout="centered")
 st.title("Classificateur Dandelion vs Grass (DINOv2)")
