@@ -1,10 +1,22 @@
+# Core Airflow
 apache-airflow==2.9.0
 apache-airflow-providers-amazon==9.0.0
 apache-airflow-providers-postgres==5.6.0
 apache-airflow-providers-smtp==1.8.0
-boto3==1.36.12
-psycopg2-binary==2.9.10
-sqlalchemy==1.4.52
-pyarrow==13.0.0
 pendulum==2.1.2
+sqlalchemy==1.4.52
+psycopg2-binary==2.9.10
+
+# ML & Tracking
+mlflow==2.7.0
 protobuf==4.25.3
+boto3==1.36.12
+s3fs==2024.3.1
+
+# Torch & Vision
+torch==2.1.2
+torchvision==0.16.2
+pillow==10.3.0
+
+# Utilitaires
+pyarrow==13.0.0

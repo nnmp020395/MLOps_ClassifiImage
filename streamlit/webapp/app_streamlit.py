@@ -26,7 +26,7 @@ if uploaded_file is not None:
         try:
             with st.spinner("Envoi de l’image à l’API..."):
                 response = requests.post(
-                    url="http://localhost:8000/predict",
+                    url="http://fastapi-api:8000/predict",
                     files={"file": uploaded_file.getvalue()},
                 )
             if response.status_code == 200:
