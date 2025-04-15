@@ -32,6 +32,13 @@ if uploaded_file is not None:
             if response.status_code == 200:
                 prediction = response.json().get("prediction")
                 st.success(f"Résultat : **{prediction}**")
+                st.markdown(
+                    '''
+                    Consultez le tableau de bord [MLflow](http://localhost:5000)
+                    pour suivre les expériences et les métriques.
+                    ''',
+                    unsafe_allow_html=True,
+                )
             else:
                 st.error(f"Erreur de l'API : {response.text}")
         except requests.exceptions.ConnectionError:
