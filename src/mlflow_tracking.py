@@ -255,24 +255,24 @@ with mlflow.start_run(run_name=run_name):
     logging.info(f"Validation Accuracy = {val_acc:.2f}%")
 
     # ------------------ ROC CURVE ------------------
-    fpr, tpr, _ = roc_curve(all_labels, all_outputs)
-    roc_auc = auc(fpr, tpr)
-    mlflow.log_metric("roc_auc", roc_auc)
-    logging.info(f"AUC: {roc_auc:.4f}")
+    # fpr, tpr, _ = roc_curve(all_labels, all_outputs)
+    # roc_auc = auc(fpr, tpr)
+    # mlflow.log_metric("roc_auc", roc_auc)
+    # logging.info(f"AUC: {roc_auc:.4f}")
 
-    # Plot the ROC curve
-    plt.figure()
-    plt.plot(fpr, tpr, color="blue", label=f"AUC = {roc_auc:.4f}")
-    plt.plot([0, 1], [0, 1], color="k", linestyle="--")
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.title("ROC Curve")
-    plt.legend(loc="lower right")
-    plt.savefig("roc_curve.png")
-    plt.close()
+    # # Plot the ROC curve
+    # plt.figure()
+    # plt.plot(fpr, tpr, color="blue", label=f"AUC = {roc_auc:.4f}")
+    # plt.plot([0, 1], [0, 1], color="k", linestyle="--")
+    # plt.xlabel("False Positive Rate")
+    # plt.ylabel("True Positive Rate")
+    # plt.title("ROC Curve")
+    # plt.legend(loc="lower right")
+    # plt.savefig("roc_curve.png")
+    # plt.close()
 
-    mlflow.log_artifact("roc_curve.png", artifact_path="roc_curve")
-    logging.info("Courbe ROC as an artifact in MLflow")
+    # mlflow.log_artifact("roc_curve.png", artifact_path="roc_curve")
+    # logging.info("Courbe ROC as an ")
 
     # ------------------ SAVE MODEL ------------------
     mlflow.pytorch.log_model(model, artifact_path="model")
