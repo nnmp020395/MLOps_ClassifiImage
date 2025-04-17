@@ -188,3 +188,6 @@ logs/
 
 # Ignore les plugins
 plugins/
+
+# Ignore la base de données mlrun
+mlruns/
