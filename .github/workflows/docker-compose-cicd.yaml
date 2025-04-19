@@ -2,7 +2,7 @@ name: CI with Docker Compose
 
 on:
   push:
-    branches: cicd
+    branches: [ cicd ]
   pull_request:
 
 jobs:
