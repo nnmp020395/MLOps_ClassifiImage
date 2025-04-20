@@ -7,10 +7,15 @@ backbone DINOv2 et une tête linéaire pour la classification. Il inclut
 partir d'un fichier .pth.
 """
 import io
+import os
 
 import s3fs
 import torch
 import torch.nn as nn
+
+minio_endpoint = os.getenv("MINIO_ENDPOINT", "http://minio:9000")
+minio_key = os.getenv("AWS_ACCESS_KEY_ID", "minioadmin")
+minio_secret = os.getenv("AWS_SECRET_ACCESS_KEY", "minioadmin")
 
 
 class DinoClassifier(nn.Module):
@@ -64,7 +69,11 @@ def load_model(model_path="dinov2_classifier.pth"):
     model = DinoClassifier(dino_backbone, num_classes=2).to(device)
 
     if model_path.startswith("s3://"):
-        fs = s3fs.S3FileSystem()
+        fs = s3fs.S3FileSystem(
+            key=minio_key,
+            secret=minio_secret,
+            client_kwargs={"endpoint_url": minio_endpoint}
+        )
         with fs.open(model_path, "rb") as f:
             buffer = io.BytesIO(f.read())
             model.load_state_dict(torch.load(buffer, map_location="cpu"))

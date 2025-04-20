@@ -22,7 +22,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ------------------ LOAD MODEL ------------------
 # On charge le modèle depuis le bucket S3
-model = load_model("s3://image-dadelion-grass/model/dinov2_classifier.pth")
+model = load_model("s3://image-dandelion-grass/model/dinov2_classifier.pth")
 model.to(device)
 model.eval()
 

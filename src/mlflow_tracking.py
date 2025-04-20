@@ -82,7 +82,11 @@ def split_samples(s3_root, classes, split_ratio=0.7):
     Returns:
         tuple: train_samples, val_samples, class_to_idx
     """
-    fs = s3fs.S3FileSystem()
+    fs = s3fs.S3FileSystem(
+        key=os.getenv("AWS_ACCESS_KEY_ID"),
+        secret=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        client_kwargs={"endpoint_url": os.getenv("MINIO_ENDPOINT", "http://minio:9000")}
+    )
     train_samples, val_samples = [], []
     class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
 
@@ -118,7 +122,11 @@ class S3ImageFolder(Dataset):
             samples (list): Liste de tuples (path, label).
             transform (callable, optional): Transformations PyTorch.
         """
-        self.s3 = s3fs.S3FileSystem()
+        self.s3 = s3fs.S3FileSystem(
+            key=os.getenv("AWS_ACCESS_KEY_ID"),
+            secret=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            client_kwargs={"endpoint_url": os.getenv("MINIO_ENDPOINT", "http://minio:9000")}
+        )
         self.samples = samples
         self.transform = transform
 
@@ -145,7 +153,7 @@ class S3ImageFolder(Dataset):
 
 
 # ------------------ CHARGEMENT DES DONNÉES ------------------
-s3_root = "s3://image-dadelion-grass"
+s3_root = "s3://image-dandelion-grass/raw"
 classes = ["dandelion", "grass"]
 train_samples, val_samples, class_to_idx = split_samples(s3_root, classes)
 
@@ -255,30 +263,34 @@ with mlflow.start_run(run_name=run_name):
     logging.info(f"Validation Accuracy = {val_acc:.2f}%")
 
     # ------------------ ROC CURVE ------------------
-    fpr, tpr, _ = roc_curve(all_labels, all_outputs)
-    roc_auc = auc(fpr, tpr)
-    mlflow.log_metric("roc_auc", roc_auc)
-    logging.info(f"AUC: {roc_auc:.4f}")
+    # fpr, tpr, _ = roc_curve(all_labels, all_outputs)
+    # roc_auc = auc(fpr, tpr)
+    # mlflow.log_metric("roc_auc", roc_auc)
+    # logging.info(f"AUC: {roc_auc:.4f}")
 
-    # Plot the ROC curve
-    plt.figure()
-    plt.plot(fpr, tpr, color="blue", label=f"AUC = {roc_auc:.4f}")
-    plt.plot([0, 1], [0, 1], color="k", linestyle="--")
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.title("ROC Curve")
-    plt.legend(loc="lower right")
-    plt.savefig("roc_curve.png")
-    plt.close()
+    # # Plot the ROC curve
+    # plt.figure()
+    # plt.plot(fpr, tpr, color="blue", label=f"AUC = {roc_auc:.4f}")
+    # plt.plot([0, 1], [0, 1], color="k", linestyle="--")
+    # plt.xlabel("False Positive Rate")
+    # plt.ylabel("True Positive Rate")
+    # plt.title("ROC Curve")
+    # plt.legend(loc="lower right")
+    # plt.savefig("roc_curve.png")
+    # plt.close()
 
-    mlflow.log_artifact("roc_curve.png", artifact_path="roc_curve")
-    logging.info("Courbe ROC as an artifact in MLflow")
+    # mlflow.log_artifact("roc_curve.png", artifact_path="roc_curve")
+    # logging.info("Courbe ROC as an artifact in MLflow")
 
     # ------------------ SAVE MODEL ------------------
     mlflow.pytorch.log_model(model, artifact_path="model")
 
-    fs = s3fs.S3FileSystem()
-    with fs.open("image-dadelion-grass/model/dinov2_classifier.pth", "wb") as f:
+    fs = s3fs.S3FileSystem(
+        key=os.getenv("AWS_ACCESS_KEY_ID"),
+        secret=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        client_kwargs={"endpoint_url": os.getenv("MINIO_ENDPOINT", "http://minio:9000")}
+    )
+    with fs.open("s3://image-dandelion-grass/model/dinov2_classifier.pth", "wb") as f:
         torch.save(model.state_dict(), f)
 
     logging.info(
