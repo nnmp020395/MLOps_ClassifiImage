@@ -1,0 +1,78 @@
+{
+    "id": null,
+    "uid": "streamlit-dashboard",
+    "title": "Streamlit Metrics Dashboard",
+    "timezone": "browser",
+    "schemaVersion": 30,
+    "version": 1,
+    "refresh": "5s",
+    "panels": [
+      {
+        "type": "stat",
+        "title": "Total Page Views",
+        "id": 1,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "streamlit_page_views",
+            "legendFormat": "Page Views"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "none",
+            "color": {
+              "mode": "palette-classic"
+            }
+          },
+          "overrides": []
+        }
+      },
+      {
+        "type": "stat",
+        "title": "Total Predict Button Clicks",
+        "id": 2,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "predict_button_clicks",
+            "legendFormat": "Button Clicks"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "none",
+            "color": {
+              "mode": "palette-classic"
+            }
+          },
+          "overrides": []
+        }
+      },
+      {
+        "type": "graph",
+        "title": "Button Clicks Over Time",
+        "id": 3,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(predict_button_clicks[1m])",
+            "legendFormat": "Clicks per second"
+          }
+        ],
+        "lines": true,
+        "linewidth": 2,
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Clicks/s"
+          },
+          {}
+        ],
+        "xaxis": {
+          "show": true
+        }
+      }
+    ]
+  }
+  

@@ -20,3 +20,6 @@ pillow==10.3.0
 
 # Utilitaires
 pyarrow==13.0.0
+
+# Prometheus
+prometheus-client==0.16.0

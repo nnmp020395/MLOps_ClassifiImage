@@ -11,6 +11,7 @@ Ce script :
 import io
 import logging
 import random
+import os
 
 import s3fs
 import torch
@@ -20,11 +21,24 @@ from PIL import Image
 from torch import optim
 from torch.utils.data import DataLoader, Dataset, Subset
 
+
+
 # ------------------ LOGGING ------------------
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logging.info("Bienvenu dans le script d'entraînement!")
+
+# ------------------ CONFIG MINIO ------------------
+minio_endpoint = os.getenv("MINIO_ENDPOINT", "http://minio:9000")
+minio_key = os.getenv("AWS_ACCESS_KEY_ID", "minioadmin")
+minio_secret = os.getenv("AWS_SECRET_ACCESS_KEY", "minioadmin")
+
+fs = s3fs.S3FileSystem(
+    key=minio_key,
+    secret=minio_secret,
+    client_kwargs={"endpoint_url": minio_endpoint}
+)
 
 # ------------------ HYPERPARAMÈTRES ------------------
 batch_size = 32
@@ -51,10 +65,10 @@ class S3ImageFolder(Dataset):
         transform (callable, optional): Transformations à appliquer sur les images.
     """
 
-    def __init__(self, root_paths, transform=None):
+    def __init__(self, root_paths, transform=None, fs=None):
         """Initialise le dataset en scannant les répertoires S3 et en mappant \
             les classes."""
-        self.s3 = s3fs.S3FileSystem()
+        self.s3 = fs or s3fs.S3FileSystem()
         self.transform = transform
         self.samples = []
         self.class_to_idx = {}
@@ -92,8 +106,8 @@ class S3ImageFolder(Dataset):
 
 # ------------------ CHARGEMENT & SPLIT ------------------
 logging.info("Chargement des données depuis S3 et split 70/30.")
-s3_paths = ["s3://image-dadelion-grass/dandelion", "s3://image-dadelion-grass/grass"]
-full_dataset = S3ImageFolder(s3_paths, transform=transform)
+s3_paths = ["s3://image-dandelion-grass/raw/dandelion", "s3://image-dandelion-grass/raw/grass"]
+full_dataset = S3ImageFolder(s3_paths, transform=transform, fs=fs)
 
 
 def stratified_split(dataset, split_ratio=0.7):
