@@ -190,4 +190,6 @@ logs/
 plugins/
 
 # Ignore la base de données mlrun
+helm-airflow/
+minio/data/
 mlruns/

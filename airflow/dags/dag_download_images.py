@@ -33,7 +33,7 @@ engine = create_engine(sql_alchemy_conn)
 
 
 with DAG(
-    "mlops_project_pipeline_sqlite",
+    "mlops_project_get_store_images",
     default_args={
         "depends_on_past": False,
         "email": ["airflow@example.com"],

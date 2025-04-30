@@ -1,0 +1,93 @@
+{
+    "id": null,
+    "uid": "fastapi-dashboard",
+    "title": "FastAPI Metrics",
+    "timezone": "browser",
+    "schemaVersion": 30,
+    "version": 1,
+    "refresh": "5s",
+    "panels": [
+      {
+        "type": "graph",
+        "title": "Total Request Count",
+        "id": 1,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "request_count",
+            "legendFormat": "{{method}} {{endpoint}}",
+            "interval": ""
+          }
+        ],
+        "lines": true,
+        "linewidth": 2,
+        "xaxis": {
+          "show": true
+        },
+        "yaxes": [
+          {
+            "format": "short",
+            "show": true
+          },
+          {
+            "show": true
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "Request Latency (seconds)",
+        "id": 2,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(request_latency_seconds_sum[1m]) / rate(request_latency_seconds_count[1m])",
+            "legendFormat": "{{endpoint}}",
+            "interval": ""
+          }
+        ],
+        "lines": true,
+        "linewidth": 2,
+        "xaxis": {
+          "show": true
+        },
+        "yaxes": [
+          {
+            "format": "s",
+            "show": true
+          },
+          {
+            "show": true
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "Requests per Second",
+        "id": 3,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(request_count[1m])",
+            "legendFormat": "{{method}} {{endpoint}}",
+            "interval": ""
+          }
+        ],
+        "lines": true,
+        "linewidth": 2,
+        "xaxis": {
+          "show": true
+        },
+        "yaxes": [
+          {
+            "format": "req/s",
+            "show": true
+          },
+          {
+            "show": true
+          }
+        ]
+      }
+    ]
+  }
+  
