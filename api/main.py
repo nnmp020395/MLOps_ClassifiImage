@@ -6,12 +6,16 @@ les requêtes.
 """
 
 import io
+import time
 
 import torch
 import torchvision.transforms as transforms
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Request, Response
+from fastapi.routing import APIRoute
 from fastapi.responses import JSONResponse
 from PIL import Image
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+
 
 from src.model import load_model
 
@@ -40,6 +44,25 @@ class_names = ["dandelion", "grass"]
 
 
 # ------------------ ROUTES ------------------
+
+REQUEST_COUNT = Counter("request_count", "App Request Count", ["method", "endpoint"])
+REQUEST_LATENCY = Histogram("request_latency_seconds", "Request latency", ["endpoint"])
+
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+
+    endpoint = request.url.path
+    method = request.method
+
+    REQUEST_COUNT.labels(method=method, endpoint=endpoint).inc()
+    REQUEST_LATENCY.labels(endpoint=endpoint).observe(process_time)
+
+    return response
+
+
 @app.get("/")
 def home():
     """
@@ -76,3 +99,7 @@ async def predict(file: UploadFile = File(...)):
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
