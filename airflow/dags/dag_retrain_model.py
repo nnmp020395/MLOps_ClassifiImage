@@ -82,7 +82,7 @@ with DAG(
         try:
             s3.upload_file(
                 "dinov2_classifier.pth",
-                "image-dadelion-grass",
+                "image-dandelion-grass",
                 "models/dinov2_classifier.pth",
             )
             logger.info("Modèle uploadé avec succès sur S3.")

@@ -82,7 +82,11 @@ def split_samples(s3_root, classes, split_ratio=0.7):
     Returns:
         tuple: train_samples, val_samples, class_to_idx
     """
-    fs = s3fs.S3FileSystem()
+    fs = s3fs.S3FileSystem(
+        key=os.getenv("AWS_ACCESS_KEY_ID"),
+        secret=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        client_kwargs={"endpoint_url": os.getenv("MINIO_ENDPOINT", "http://minio:9000")}
+    )
     train_samples, val_samples = [], []
     class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
 
@@ -118,7 +122,11 @@ class S3ImageFolder(Dataset):
             samples (list): Liste de tuples (path, label).
             transform (callable, optional): Transformations PyTorch.
         """
-        self.s3 = s3fs.S3FileSystem()
+        self.s3 = s3fs.S3FileSystem(
+            key=os.getenv("AWS_ACCESS_KEY_ID"),
+            secret=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            client_kwargs={"endpoint_url": os.getenv("MINIO_ENDPOINT", "http://minio:9000")}
+        )
         self.samples = samples
         self.transform = transform
 
@@ -145,7 +153,7 @@ class S3ImageFolder(Dataset):
 
 
 # ------------------ CHARGEMENT DES DONNÉES ------------------
-s3_root = "s3://image-dadelion-grass"
+s3_root = "s3://image-dandelion-grass/raw"
 classes = ["dandelion", "grass"]
 train_samples, val_samples, class_to_idx = split_samples(s3_root, classes)
 
@@ -277,8 +285,12 @@ with mlflow.start_run(run_name=run_name):
     # ------------------ SAVE MODEL ------------------
     mlflow.pytorch.log_model(model, artifact_path="model")
 
-    fs = s3fs.S3FileSystem()
-    with fs.open("image-dadelion-grass/model/dinov2_classifier.pth", "wb") as f:
+    fs = s3fs.S3FileSystem(
+        key=os.getenv("AWS_ACCESS_KEY_ID"),
+        secret=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        client_kwargs={"endpoint_url": os.getenv("MINIO_ENDPOINT", "http://minio:9000")}
+    )
+    with fs.open("s3://image-dandelion-grass/model/dinov2_classifier.pth", "wb") as f:
         torch.save(model.state_dict(), f)
 
     logging.info(
