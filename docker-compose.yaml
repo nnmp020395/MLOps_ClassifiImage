@@ -141,7 +141,7 @@ services:
       - -c
       - airflow
 
-  mlflow-server: #+++
+  mlflow-server:
     build:
       context: ./mlflow
       dockerfile: Dockerfile.mlflow
@@ -154,6 +154,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - MLFLOW_S3_ENDPOINT_URL=${MINIO_ENDPOINT}
 
   fastapi-api:
     build:
