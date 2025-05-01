@@ -70,7 +70,7 @@ def find_latest_model_for_date(date_obj):
             key = obj["Key"]
             filename = key.split("/")[-1]
             print(f"Nom de fichier: {filename}")
-            
+
             if filename.startswith("dinov2_classifier_") and filename.endswith(".pth"):
                 index = int(filename[len("dinov2_classifier_") : -len(".pth")])
                 indices.append((index, key))
