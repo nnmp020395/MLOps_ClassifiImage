@@ -6,104 +6,12 @@
 replicaCount: 1
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
-airflow:
-  image:
-    repository: apache/airflow
-    tag: 2.8.2
-  executor: LocalExecutor
-  env:
-    AIRFLOW__CORE__EXECUTOR: LocalExecutor
-    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-    AIRFLOW__API__ACCESS_CONTROL_ALLOW_ORIGINS: "*"
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-    AWS_ACCESS_KEY_ID: minioadmin
-    AWS_SECRET_ACCESS_KEY: minioadmin
-  volumes:
-    - name: dags
-      mountPath: /opt/airflow/dags
-      hostPath: ./airflow/dags
-    - name: logs
-      mountPath: /opt/airflow/logs
-      hostPath: ./airflow/logs
-    - name: plugins
-      mountPath: /opt/airflow/plugins
-      hostPath: ./airflow/plugins
-    - name: src
-      mountPath: /opt/airflow/src
-      hostPath: ./src
-    - name: mlruns
-      mountPath: /mlflow
-      hostPath: ./mlruns
-  ports:
-    - name: web
-      containerPort: 8080
-
-postgres:
-  image: postgres:13
-  env:
-    POSTGRES_USER: airflow
-    POSTGRES_PASSWORD: airflow
-    POSTGRES_DB: airflow
-  volumes:
-    - name: pgdata
-      mountPath: /var/lib/postgresql/data
-
-minio:
-  image: minio/minio
-  env:
-    MINIO_ROOT_USER: minioadmin
-    MINIO_ROOT_PASSWORD: minioadmin
-  ports:
-    - "9000:9000"
-    - "9001:9001"
-  volumes:
-    - name: miniodata
-      mountPath: /data
-
-mlflow:
-  build:
-    context: ./mlflow
-    dockerfile: Dockerfile.mlflow
-  ports:
-    - "5001:6000"
-  volumes:
-    - name: mlruns
-      mountPath: /mlflow
-
-fastapi:
-  build:
-    context: .
-    dockerfile: ./api/Dockerfile.api
-  ports:
-    - "8000:8000"
-  volumes:
-    - name: model
-      mountPath: /app/dinov2_classifier.pth
-      hostPath: ./api/dinov2_classifier.pth
-
-streamlit:
-  build:
-    context: ./streamlit
-    dockerfile: Dockerfile.streamlit
-  ports:
-    - "8501:8501"
-    - "8502:8502"
-
-grafana:
-  image: grafana/grafana
-  ports:
-    - "3000:3000"
-  volumes:
-    - ./monitoring:/etc/grafana/provisioning
-    - ./monitoring/dashboards:/var/lib/grafana/dashboards
-
-prometheus:
-  image: prom/prometheus
-  ports:
-    - "9090:9090"
-  volumes:
-    - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-
+image:
+  repository: nginx
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
