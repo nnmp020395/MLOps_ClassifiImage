@@ -14,7 +14,7 @@
         "datasource": "Prometheus",
         "targets": [
           {
-            "expr": "streamlit_page_views",
+            "expr": "streamlit_page_views_total",
             "legendFormat": "Page Views"
           }
         ],
@@ -26,16 +26,53 @@
             }
           },
           "overrides": []
+        },
+        "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      }
+      },
+      {
+        "type": "graph",
+        "title": "Pages Views Over Time",
+        "id": 2,
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(streamlit_page_views_total[1m])",
+            "legendFormat": "Views per second"
+          }
+        ],
+        "lines": true,
+        "linewidth": 2,
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Views/s",
+            "show": true
+          },
+          {}
+        ],
+        "xaxis": {
+          "show": true
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 15,
+          "x": 6,
+          "y": 0
         }
       },
       {
         "type": "stat",
         "title": "Total Predict Button Clicks",
-        "id": 2,
+        "id": 3,
         "datasource": "Prometheus",
         "targets": [
           {
-            "expr": "predict_button_clicks",
+            "expr": "predict_button_clicks_total",
             "legendFormat": "Button Clicks"
           }
         ],
@@ -47,16 +84,22 @@
             }
           },
           "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 0,
+          "y": 5
         }
       },
       {
         "type": "graph",
         "title": "Button Clicks Over Time",
-        "id": 3,
+        "id": 4,
         "datasource": "Prometheus",
         "targets": [
           {
-            "expr": "rate(predict_button_clicks[1m])",
+            "expr": "rate(predict_button_clicks_total[1m])",
             "legendFormat": "Clicks per second"
           }
         ],
@@ -65,12 +108,19 @@
         "yaxes": [
           {
             "format": "short",
-            "label": "Clicks/s"
+            "label": "Clicks/s",
+            "show": true
           },
           {}
         ],
         "xaxis": {
           "show": true
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 15,
+          "x": 6,
+          "y": 5
         }
       }
     ]

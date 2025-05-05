@@ -198,8 +198,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./monitoring:/etc/grafana/provisioning
-      - ./monitoring/dashboards:/var/lib/grafana/dashboards
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
       - prometheus
 
