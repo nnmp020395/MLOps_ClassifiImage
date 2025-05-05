@@ -14,10 +14,11 @@ spec:
     spec:
       containers:
         - name: airflow-webserver
-          image: "{{ .Values.airflow.image.repository }}:{{ .Values.airflow.image.tag }}"
+          image: airflow-webserver:latest #"{{ .Values.airflow.image.repository }}:{{ .Values.airflow.image.tag }}"
           command: ["airflow", "webserver"]
           ports:
-            - containerPort: {{ .Values.airflow.ports.web.containerPort }}
+            - containerPort: 8080 #{{ .Values.airflow.webPort }}
+              protocol: TCP
           env:
             {{- range $key, $value := .Values.airflow.env }}
             - name: {{ $key }}
