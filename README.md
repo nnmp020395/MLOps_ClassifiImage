@@ -77,7 +77,7 @@ In the development environment the dashboards are accessible at the url : http:/
 
 The API monitoring dashboard is set up to display POST and GET requests (predictions fall under the POST requests category). It combines numbers for the requests done directly to the API and requests done through Streamlit. 
 
-![API monitoring](./images/API_monitoring.png)
+![API monitoring](./images/api_monitoring.png)
 
 ### Streamlit monitoring
 
