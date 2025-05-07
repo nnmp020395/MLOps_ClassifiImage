@@ -69,7 +69,31 @@ The Streamlit app is accessible at the url : http://localhost:8501. A prediction
 ## 8. Monitoring of usage
 
 Monitoring of the API usage is setup using Prometeus and Grafana. Prometheus scraps the metrics of API usage and Streamlit interactions while Grafana connects to Prometheus as a data source and is used to build dashboards.
+
+Structure of the monitoring folder :
+
+```bash
+├── ../MlOpsClassifiImage       # Implementation of classifier with MlOps pipeline
+│
+├── monitoring                  # Top-level folder for monitoring stack (Prometheus, Grafana)
+│   └──prometheus.yml           # Main configuration file for Prometheus (scrape jobs, targets)
+│
+├── grafana                     # Grafana setup for visualization
+    ├── dashboards              # JSON files, templates for presetup dashboards
+    │   └──fastapi_dashboard.json   # dashboard for API request metrics
+    │   └──streamlit_dashboard.json # dashboard for Streamlit usage metrics
+    │            
+    └── provisioning            # Auto-provisioning setup for datasources and dashboards
+        ├──dashboards           # Provisioning config that tells Grafana to load the JSON dashboards
+        │   └──dashboard.yml   # Config file mapping JSON files to folders/titles           
+        └──datasources          # Provisioning config for Prometheus data source    
+            └──datasources.yml  # Points Grafana to Prometheus URL      
+```
+
+
 In the development environment the dashboards are accessible at the url : http://localhost:3000
+
+
 
 ### TODO Prod environment ?
 
