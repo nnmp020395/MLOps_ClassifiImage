@@ -1,29 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.cmd: kompose convert -f docker-compose.yaml
-    kompose.version: 1.35.0 (HEAD)
-    meta.helm.sh/release-name: my-release1
-    meta.helm.sh/release-namespace: default
   labels:
-    io.kompose.service: airflow-triggerer
-    app.kubernetes.io/managed-by: Helm
-  name: airflow-triggerer
+    app: airflow-triggerer
+  name: {{ .Release.Name }}-airflow-triggerer
 spec:
   replicas: 1
   selector:
     matchLabels:
-      io.kompose.service: airflow-triggerer
+      app: airflow-triggerer
   strategy:
     type: Recreate
   template:
     metadata:
-      annotations:
-        kompose.cmd: kompose convert -f docker-compose.yaml
-        kompose.version: 1.35.0 (HEAD)
       labels:
-        io.kompose.service: airflow-triggerer
+        app: airflow-triggerer
     spec:
       containers:
         - args:

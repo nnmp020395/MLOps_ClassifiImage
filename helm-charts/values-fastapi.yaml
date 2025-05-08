@@ -6,85 +6,10 @@
 replicaCount: 1
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
-airflow:
-  image:
-    repository: apache/airflow
-    tag: 2.8.2
-  executor: LocalExecutor
-  env:
-    - name: AIRFLOW__CORE__EXECUTOR
-      value: LocalExecutor
-    - name: AIRFLOW__CORE__LOAD_EXAMPLES
-      value: "false"
-    - name: AIRFLOW__API__ACCESS_CONTROL_ALLOW_ORIGINS
-      value: "*"
-    - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
-      value: postgresql+psycopg2://airflow:airflow@postgres/airflow
-    - name: AWS_ACCESS_KEY_ID
-      value: minioadmin
-    - name: AWS_SECRET_ACCESS_KEY
-      value: minioadmin
-  volumes:
-    - name: dags
-      hostPath:
-        path: ./airflow/dags
-    - name: logs
-      hostPath:
-        path: ./airflow/logs
-    - name: plugins
-      hostPath:
-        path: ./airflow/plugins
-    - name: src
-      hostPath:
-        path: ./src
-    - name: mlruns
-      hostPath:
-        path: ./mlruns
-
-airflow-webserver:
-  service:
-    ports:
-      - name: airflow-ui
-        port: 8080
-        targetPort: 8080
-
-postgres:
-  image: postgres:13
-  env:
-    POSTGRES_USER: airflow
-    POSTGRES_PASSWORD: airflow
-    POSTGRES_DB: airflow
-  volumes:
-    - name: pgdata
-      mountPath: /var/lib/postgresql/data
-
-minio:
-  image: minio/minio
-  env:
-    MINIO_ROOT_USER: minioadmin
-    MINIO_ROOT_PASSWORD: minioadmin
-  ports:
-    - "9000:9000"
-    - "9001:9001"
-  volumes:
-    - name: miniodata
-      mountPath: /data
-
-mlflow:
-  build:
-    context: ./mlflow
-    dockerfile: Dockerfile.mlflow
-  ports:
-    - "5001:6000"
-  volumes:
-    - name: mlruns
-      mountPath: /mlflow
-
-fastapi:
+fastapi-api:
   build:
     context: .
     dockerfile: ./api/Dockerfile.api
-  image: mlops_classifiimage-fastapi-api
   service:
     port: 8000
     targetPort: 8000
@@ -96,31 +21,6 @@ fastapi:
   env:
     FASTAPI_ID: admin
     FASTAPI_SECRET: admin
-
-streamlit:
-  image: streamlit
-  build:
-    context: ./streamlit
-    dockerfile: Dockerfile.streamlit
-  ports:
-    - "8501:8501"
-    - "8502:8502"
-
-grafana:
-  image: grafana/grafana
-  ports:
-    - "3000:3000"
-  volumes:
-    - ./monitoring:/etc/grafana/provisioning
-    - ./monitoring/dashboards:/var/lib/grafana/dashboards
-
-prometheus:
-  image: prom/prometheus
-  ports:
-    - "9090:9090"
-  volumes:
-    - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []

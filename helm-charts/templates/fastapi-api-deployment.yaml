@@ -1,35 +1,31 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.cmd: kompose convert -f docker-compose.yaml
-    kompose.version: 1.35.0 (HEAD)
   labels:
-    io.kompose.service: fastapi-api
-  name: fastapi-api
+    app: fastapi-api
+  name: {{ .Release.Name }}-fastapi-api
 spec:
   replicas: 1
   selector:
     matchLabels:
-      io.kompose.service: fastapi-api
+      app: fastapi-api
   strategy:
     type: Recreate
   template:
     metadata:
-      annotations:
-        kompose.cmd: kompose convert -f docker-compose.yaml
-        kompose.version: 1.35.0 (HEAD)
       labels:
-        io.kompose.service: fastapi-api
+        app: fastapi-api
     spec:
       containers:
         - env:
-            - name: AWS_ACCESS_KEY_ID
-            - name: AWS_SECRET_ACCESS_KEY
-          image: fastapi-api
+            - name: FASTAPI_ID
+              value: {{ .Values.fastapi.env.FASTAPI_ID }}
+            - name: FASTAPI_SECRET
+              value: {{ .Values.fastapi.env.FASTAPI_SECRET }}
+          image: {{ .Values.fastapi.image | default "fastapi-api" }}
           name: fastapi-api
           ports:
-            - containerPort: 8000
+            - containerPort: {{ .Values.fastapi.service.targetPort }}
               protocol: TCP
           volumeMounts:
             - mountPath: /app/dinov2_classifier.pth
