@@ -19,8 +19,8 @@ fastapi-api:
       hostPath:
         path: ./api/dinov2_classifier.pth
   env:
-    FASTAPI_ID: admin
-    FASTAPI_SECRET: admin
+    FASTAPI_ID: minioadmin
+    FASTAPI_SECRET: minioadmin
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
