@@ -1,40 +1,40 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.cmd: kompose convert
-    kompose.version: 1.35.0 (HEAD)
-  labels:
-    io.kompose.service: fastapi-api
   name: fastapi-api
 spec:
   replicas: 1
   selector:
     matchLabels:
-      io.kompose.service: fastapi-api
+      app: fastapi-api
   strategy:
     type: Recreate
   template:
     metadata:
-      annotations:
-        kompose.cmd: kompose convert
-        kompose.version: 1.35.0 (HEAD)
       labels:
-        io.kompose.service: fastapi-api
+        app: fastapi-api
     spec:
       containers:
-        - env:
-            - name: AWS_ACCESS_KEY_ID
-            - name: AWS_SECRET_ACCESS_KEY
+        - name: fastapi-api
           image: fastapi-api
-          name: fastapi-api
           ports:
             - containerPort: 8000
               protocol: TCP
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              value: minioadmin
+            - name: AWS_SECRET_ACCESS_KEY
+              value: minioadmin
           volumeMounts:
             - mountPath: /app/dinov2_classifier.pth
               name: fastapi-api-claim0
-      restartPolicy: Always
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
       volumes:
         - name: fastapi-api-claim0
           persistentVolumeClaim:
