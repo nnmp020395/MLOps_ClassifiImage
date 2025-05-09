@@ -22,12 +22,12 @@ default_args = {
 
 # ------------------ DÉFINITION DU DAG ------------------
 with DAG(
-    dag_id="dinov2_train_pipeline_with_mlflow",
+    dag_id="dinov2_train_pipeline",
     default_args=default_args,
     description="Pipeline complet avec traçage MLflow",
     schedule_interval=None,
     start_date=datetime(2024, 4, 10),
-    catchup=False,
+    catchup=True,
 ) as dag:
 
     def run_mlflow_tracking():
@@ -57,10 +57,10 @@ with DAG(
 
     # ------------------ TÂCHE MLflow ------------------
     t_mlflow_tracking = PythonOperator(
-        task_id="mlflow_tracking",
+        task_id="Entrainement_du_modele",
         python_callable=run_mlflow_tracking,
         doc="Lance le script de suivi d'expérience avec MLflow.",
     )
 
-    # ------------------ DÉFINITION DES DÉPENDANCES ------------------
+    # ------------------ ORDRE DES TÂCHES ------------------
     t_mlflow_tracking

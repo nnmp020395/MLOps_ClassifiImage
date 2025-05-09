@@ -23,7 +23,7 @@ engine = create_engine(sql_alchemy_conn)
 
 # Récupérer les identifiants AWS à partir des variables d'environnement
 minio_endpoint = os.getenv("MINIO_ENDPOINT", "http://minio:9000")
-minio_access_key = os.getenv("AWS_ACCESS_KEY_ID") 
+minio_access_key = os.getenv("AWS_ACCESS_KEY_ID")
 minio_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 bucket_name = "image-dandelion-grass"
 region_name = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
@@ -107,7 +107,7 @@ def process_images(**kwargs):
         )
 
         # Vérifier si le bucket existe déjà
-        existing_buckets = [b['Name'] for b in s3_client.list_buckets()['Buckets']]
+        existing_buckets = [b["Name"] for b in s3_client.list_buckets()["Buckets"]]
         if bucket_name not in existing_buckets:
             s3_client.create_bucket(Bucket=bucket_name)
             logging.info(f"Bucket '{bucket_name}' created.")
