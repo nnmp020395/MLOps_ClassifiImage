@@ -69,6 +69,8 @@ minio:
   volumes:
     - name: miniodata
       mountPath: /data
+      hostPath:
+        path: ./minio/data
 
 mlflow:
   build:
@@ -84,18 +86,17 @@ fastapi:
   build:
     context: .
     dockerfile: ./api/Dockerfile.api
-  image: mlops_classifiimage-fastapi-api
+  #image: mlops_classifiimage-fastapi-api
   service:
     port: 8000
     targetPort: 8000
   volumes:
-    - name: model
-      mountPath: /app/dinov2_classifier.pth
+    - name: model # mountPath: /app/dinov2_classifier.pth
       hostPath:
         path: ./api/dinov2_classifier.pth
   env:
-    FASTAPI_ID: admin
-    FASTAPI_SECRET: admin
+    FASTAPI_ID: minioadmin
+    FASTAPI_SECRET: minioadmin
 
 streamlit:
   image: streamlit
