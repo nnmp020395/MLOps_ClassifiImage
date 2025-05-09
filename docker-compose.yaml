@@ -11,6 +11,7 @@ x-airflow-common:
     AIRFLOW__API__ACCESS_CONTROL_ALLOW_HEADERS: 'content-type, origin, authorization, accept'
     AIRFLOW__API__ACCESS_CONTROL_ALLOW_METHODS: 'GET, POST, OPTIONS, DELETE'
     AIRFLOW__API__ACCESS_CONTROL_ALLOW_ORIGINS: '*'
+    AIRFLOW__API__AUTH_BACKEND: airflow.api.auth.backend.basic_auth
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow # If no AIRFLOW__DATABASE__SQL_ALCHEMY_CONN variable is set then SQLite database is created in ${AIRFLOW_HOME}/airflow.db.
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
     AWS_ACCESS_KEY_ID: minioadmin
@@ -168,6 +169,9 @@ services:
       - "8000:8000"
     volumes:
       - ./api/dinov2_classifier.pth:/app/dinov2_classifier.pth
+      - ./airflow/dags/:/opt/airflow/dags
+      - ./airflow/logs/:/opt/airflow/logs
+      - ./src:/app/src
     depends_on:
       - mlflow-server
     environment:
@@ -178,9 +182,20 @@ services:
     build:
       context: ./streamlit
       dockerfile: Dockerfile.streamlit
+    volumes:
+      - ./streamlit:/app
+      - ./airflow:/app/airflow
+      - ./streamlit/webapp:/app/webapp
+      - ./streamlit/webapp/.streamlit/secrets.toml:/app/.streamlit/secrets.toml
     ports:
       - "8501:8501" # streamlit app
       - "8502:8502" # Prometheus streamlit metrics endpoint
+    command: streamlit run webapp/app_streamlit.py
+    environment:
+    - MINIO_ENDPOINT=http://minio:9000
+    - AWS_ACCESS_KEY_ID=minioadmin
+    - AWS_SECRET_ACCESS_KEY=minioadmin
+
 
   prometheus:
     image: prom/prometheus

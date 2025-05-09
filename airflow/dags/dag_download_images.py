@@ -18,7 +18,7 @@ from utils.store_images import process_images
 
 from airflow import DAG
 
-# Configuration du logging
+# ---------------- CONFIGURATION DU LOGGING ----------------
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -27,11 +27,11 @@ aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 aws_default_region = os.getenv("AWS_DEFAULT_REGION")
 
-# Configuration de la connexion à MySQL
+# ---------------- CONFIGURATION DE LA CONNEXION À MYSLQ ----------------
 sql_alchemy_conn = "postgresql+psycopg2://airflow:airflow@postgres/airflow"
 engine = create_engine(sql_alchemy_conn)
 
-
+# ------------------ DÉFINITION DU DAG ------------------
 with DAG(
     "mlops_project_get_store_images",
     default_args={
@@ -52,7 +52,7 @@ with DAG(
     MLOps pipeline for classification model.
     """
 
-    # Tâche du DAG
+    # ------------------ Tâche du DAG ------------------
     start_task = EmptyOperator(task_id="start_task")
 
     insert_urls_task = PythonOperator(
@@ -69,5 +69,5 @@ with DAG(
         dag=dag,
     )
 
-    # Définir l'ordre des tâches
+    # ------------------ ORDRE DES TÂCHES ------------------
     start_task >> insert_urls_task >> process_images_task
