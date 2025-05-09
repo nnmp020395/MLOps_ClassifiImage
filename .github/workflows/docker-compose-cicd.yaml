@@ -36,6 +36,13 @@ jobs:
       run: |
         docker-compose -f docker-compose.yaml up -d --build
 
+    - name: Run unit tests
+      run: |
+        docker-compse -f docker-compose.yaml axec -T api pytest tests/ || exit 1
+        docker-compse -f docker-compose.yaml axec -T mlflow pytest tests/ || exit 1
+        docker-compse -f docker-compose.yaml axec -T mlruns pytest tests/ || exit 1
+        docker-compse -f docker-compose.yaml axec -T streamlit pytest tests/ || exit 1
+        docker-compse -f docker-compose.yaml axec -T src pytest tests/ || exit 1
     - name: Run health checks (optional)
       run: |
         curl --fail http://localhost:8080/health
