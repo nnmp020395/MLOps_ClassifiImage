@@ -3,12 +3,12 @@ FROM python:3.9-slim
 WORKDIR /app
 
 # Dépendances Python
-COPY requirements.txt .
+COPY streamlit/requirements.txt .
 #RUN pip install --upgrade pip && pip install -r requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Code source
-COPY webapp/ ./webapp
+COPY streamlit/webapp/ ./webapp
 COPY ../src ./src
 COPY ../airflow ./airflow
 
