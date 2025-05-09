@@ -180,8 +180,8 @@ services:
 
   streamlit:
     build:
-      context: ./streamlit
-      dockerfile: Dockerfile.streamlit
+      context: .
+      dockerfile: streamlit/Dockerfile.streamlit
     volumes:
       - ./streamlit:/app
       - ./airflow:/app/airflow
