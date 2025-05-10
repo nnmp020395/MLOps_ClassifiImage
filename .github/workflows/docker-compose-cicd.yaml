@@ -60,22 +60,22 @@ jobs:
 
     - name: Build and run containers
       run: |
-        DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose -f docker-compose.yaml up -d --build
+        DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose -p testproject -f docker-compose.yaml up -d --build
 
     - name: Copy and install test dependencies
       run: |
         for service in fastapi-api airflow-cli streamlit; do
-          docker cp requirements-ci.txt ${service}:/tmp/requirements-ci.txt
-          docker-compose exec -T $service pip install --no-cache-dir -r /tmp/requirements-ci.txt
+          docker cp requirements-ci.txt testproject_${service}_1:/tmp/requirements-ci.txt
+          docker-compose -p testproject exec -T $service pip install --no-cache-dir -r /tmp/requirements-ci.txt
         done
 
 
     - name: Run unit tests in containers
       run: |
-        docker-compose exec -T fastapi-api pytest tests/test_api || exit 1
-        docker-compose exec -T airflow-cli pytest tests/test_dags || exit 1
-        docker-compose exec -T fastapi-api pytest tests/test_src || exit 1
-        docker-compose exec -T streamlit pytest tests/test_streamlit || exit 1
+        docker-compose -p testproject exec -T fastapi-api pytest tests/test_api || exit 1
+        docker-compose -p testproject exec -T airflow-cli pytest tests/test_dags || exit 1
+        docker-compose -p testproject exec -T fastapi-api pytest tests/test_src || exit 1
+        docker-compose -p testproject exec -T streamlit pytest tests/test_streamlit || exit 1
 
     - name: Reduce verbosity in logs
       run: |
