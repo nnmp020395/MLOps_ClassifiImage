@@ -4,6 +4,7 @@ on:
   push:
     branches: [ unittest ]
   pull_request:
+    branches: [ '*' ]
 
 jobs:
   build-and-test:
@@ -17,6 +18,14 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-ci.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
@@ -33,7 +42,8 @@ jobs:
         echo "AWS_DEFAULT_REGION=${{ secrets.AWS_DEFAULT_REGION }}" >> $GITHUB_ENV
 
     - name: Build and run containers
-      run: docker-compose -f docker-compose.yaml up -d --build
+      run: |
+        docker-compose -f docker-compose.yaml up -d --build
 
     - name: Copy and install test dependencies
       run: |
@@ -53,12 +63,19 @@ jobs:
         docker-compose exec -T fastapi-api pytest tests/test_src || exit 1
         docker-compose exec -T streamlit pytest tests/test_streamlit || exit 1
 
-    - name: Run health checks (optional)
+    - name: Reduce verbosity in logs
+      run: |
+        export GITHUB_RUNNER_VERBOSE=0
+
+    - name: Run health checks
       run: |
         curl --fail http://localhost:8080/health
         curl --fail http://localhost:6000/health
         curl --fail http://localhost:8000/docs
         curl --fail http://localhost:8501/
 
-    - name: Shut down containers
-      run: docker-compose -f docker-compose.yaml down
+    - name: Shut down containers and clean up temporary files
+      run: |
+        docker-compose -f docker-compose.yaml down
+        rm -rf /tmp/*
+        rm -rf ~/.cache/* 
