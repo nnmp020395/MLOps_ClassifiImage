@@ -33,16 +33,26 @@ jobs:
         echo "AWS_DEFAULT_REGION=${{ secrets.AWS_DEFAULT_REGION }}" >> $GITHUB_ENV
 
     - name: Build and run containers
-      run: |
-        docker-compose -f docker-compose.yaml up -d --build
+      run: docker-compose -f docker-compose.yaml up -d --build
 
-    - name: Run unit tests
+    - name: Copy and install test dependencies
       run: |
-        docker-compse -f docker-compose.yaml axec -T api pytest tests/ || exit 1
-        docker-compse -f docker-compose.yaml axec -T mlflow pytest tests/ || exit 1
-        docker-compse -f docker-compose.yaml axec -T mlruns pytest tests/ || exit 1
-        docker-compse -f docker-compose.yaml axec -T streamlit pytest tests/ || exit 1
-        docker-compse -f docker-compose.yaml axec -T src pytest tests/ || exit 1
+        docker cp requirements-ci.txt fastapi-api:/tmp/requirements-ci.txt
+        docker cp requirements-ci.txt airflow-cli:/tmp/requirements-ci.txt
+        docker cp requirements-ci.txt streamlit:/tmp/requirements-ci.txt
+
+        docker-compose exec -T fastapi-api pip install -r /tmp/requirements-ci.txt
+        docker-compose exec -T airflow-cli pip install -r /tmp/requirements-ci.txt
+        docker-compose exec -T streamlit pip install -r /tmp/requirements-ci.txt
+
+
+    - name: Run unit tests in containers
+      run: |
+        docker-compose exec -T fastapi-api pytest tests/test_api || exit 1
+        docker-compose exec -T airflow-cli pytest tests/test_dags || exit 1
+        docker-compose exec -T fastapi-api pytest tests/test_src || exit 1
+        docker-compose exec -T streamlit pytest tests/test_streamlit || exit 1
+
     - name: Run health checks (optional)
       run: |
         curl --fail http://localhost:8080/health
