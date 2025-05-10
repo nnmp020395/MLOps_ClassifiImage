@@ -19,6 +19,22 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Free disk space before build
+      run: |
+        echo "Disk before cleanup:"
+        df -h
+        sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache
+        echo "Disk after cleanup:"
+        df -h
+        
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-docker-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-docker-
+
     - name: Cache Python dependencies
       uses: actions/cache@v3
       with:
@@ -26,6 +42,7 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-ci.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
+
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
@@ -43,17 +60,14 @@ jobs:
 
     - name: Build and run containers
       run: |
-        docker-compose -f docker-compose.yaml up -d --build
+        DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose -f docker-compose.yaml up -d --build
 
     - name: Copy and install test dependencies
       run: |
-        docker cp requirements-ci.txt fastapi-api:/tmp/requirements-ci.txt
-        docker cp requirements-ci.txt airflow-cli:/tmp/requirements-ci.txt
-        docker cp requirements-ci.txt streamlit:/tmp/requirements-ci.txt
-
-        docker-compose exec -T fastapi-api pip install -r /tmp/requirements-ci.txt
-        docker-compose exec -T airflow-cli pip install -r /tmp/requirements-ci.txt
-        docker-compose exec -T streamlit pip install -r /tmp/requirements-ci.txt
+        for service in fastapi-api airflow-cli streamlit; do
+          docker cp requirements-ci.txt ${service}:/tmp/requirements-ci.txt
+          docker-compose exec -T $service pip install --no-cache-dir -r /tmp/requirements-ci.txt
+        done
 
 
     - name: Run unit tests in containers
