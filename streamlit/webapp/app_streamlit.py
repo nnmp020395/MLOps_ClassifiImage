@@ -146,6 +146,9 @@ elif page == "Admin":
 
     @st.cache_data(show_spinner=False)
     def get_image_from_minio(bucket: str, key: str) -> Image.Image:
+        """
+        Récupère une image depuis MinIO.
+        """
         try:
             buf = BytesIO()
             s3.download_fileobj(bucket, key, buf)
@@ -156,6 +159,9 @@ elif page == "Admin":
             return None
 
     def list_new_images():
+        """
+        Récupère la liste des images à valider depuis MinIO.
+        """
         try:
             response = s3.list_objects_v2(
                 Bucket=bucket_name, Prefix="raw/new_data/pending_validation/"
