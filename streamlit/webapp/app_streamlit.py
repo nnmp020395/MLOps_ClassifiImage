@@ -36,6 +36,13 @@ lock = threading.Lock()
 
 # ------------------ PROMETHEUS METRICS ------------------
 def setup_metrics():
+    """
+    Démarre le serveur de métriques Prometheus et initialise les compteurs
+    pour les visites de page et les clics sur le bouton de prédiction.
+
+    Returns:
+        tuple: Compteurs pour les visites de page et les clics sur le bouton.
+    """
     try:
         page_views = REGISTRY._names_to_collectors["streamlit_page_views"]
     except KeyError:
@@ -50,8 +57,10 @@ def setup_metrics():
         )
     return page_views, button_clicks
 
-
 def start_metrics_server():
+    """
+    Démarre le serveur de métriques Prometheus sur le port 8502.
+    """
     start_http_server(8502)
     while True:
         time.sleep(10)

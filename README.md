@@ -51,6 +51,17 @@ There are two ways for the user to interact with the model in inference mode.
 
 ### Via the API
 
+Structure of the /api folder:
+
+```bash
+├── ../MlOpsClassifiImage       # Implementation of classifier with MlOps pipeline
+│
+└── api                  # Top-level folder for inference on the api
+    └──Dockerfile.api    # Dockerfile for the api via FastAPI
+    └──main.py           # Script to initialize the api via FastAPI and handle requests
+    └──requirements.txt  # Requirements for the FastAPI module
+```
+
 - Dev environment
 The API is accessible at the url : http://localhost:8000. A prediction can be made using the following command :
 
@@ -64,6 +75,19 @@ curl -X POST http://localhost:8000/predict \
 - Production environment
 
 ### Via Streamlit
+
+Structure of the /streamlit folder:
+
+```bash
+├── ../MlOpsClassifiImage       # Implementation of classifier with MlOps pipeline
+│
+└── streamlit                  # Top-level folder for interaction via Streamlit
+    ├── webapp              # setup for the streamlit interface
+    │   └──app_streamlit.py   # main script for the interaction via Streamlit
+    │            
+    └── Dockerfile.streamlit  # Dockerfile for the streamlit module
+    └── requirements.txt      # requirements for the streamlit module
+```
 
 - Dev environment
 
@@ -86,7 +110,7 @@ Structure of the monitoring folder :
 ├── monitoring                  # Top-level folder for monitoring stack (Prometheus, Grafana)
 │   └──prometheus.yml           # Main configuration file for Prometheus (scrape jobs, targets)
 │
-├── grafana                     # Grafana setup for visualization
+└── grafana                     # Grafana setup for visualization
     ├── dashboards              # JSON files, templates for presetup dashboards
     │   └──fastapi_dashboard.json   # dashboard for API request metrics
     │   └──streamlit_dashboard.json # dashboard for Streamlit usage metrics
