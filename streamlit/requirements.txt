@@ -11,3 +11,9 @@ psycopg2-binary==2.9.10
 boto3==1.36.12
 faiss-cpu
 apache-airflow==2.9.0
+
+# for tests
+streamlit
+pandas
+pytest
+unittest

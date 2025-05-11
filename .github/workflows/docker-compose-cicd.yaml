@@ -64,12 +64,12 @@ jobs:
       run: |
         DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose -p testproject -f docker-compose.yaml up -d --build
 
-    - name: Copy and install test dependencies
-      run: |
-        for service in fastapi-api airflow-webserver streamlit; do
-          docker cp requirements-ci.txt testproject_${service}_1:/tmp/requirements-ci.txt
-          docker-compose -p testproject exec -T $service pip install --no-cache-dir -r /tmp/requirements-ci.txt
-        done
+    # - name: Copy and install test dependencies
+    #   run: |
+    #     for service in fastapi-api airflow-webserver streamlit; do
+    #       docker cp requirements-ci.txt testproject_${service}_1:/tmp/requirements-ci.txt
+    #       docker-compose -p testproject exec -T $service pip install --no-cache-dir -r /tmp/requirements-ci.txt
+    #     done
 
 
     - name: Run unit tests in containers

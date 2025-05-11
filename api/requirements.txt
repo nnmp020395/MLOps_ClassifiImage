@@ -12,3 +12,9 @@ python-dotenv==0.19.0
 requests==2.31.0
 numpy<2.0.0
 prometheus_client==0.16.0
+
+# for tests
+streamlit
+pandas
+pytest
+unittest

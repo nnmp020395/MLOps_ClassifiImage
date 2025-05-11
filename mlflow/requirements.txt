@@ -2,3 +2,9 @@ mlflow==2.7.0
 gunicorn==21.2.0
 sqlalchemy==1.4.52
 protobuf==4.25.3
+
+# for tests
+streamlit
+pandas
+pytest
+unittest

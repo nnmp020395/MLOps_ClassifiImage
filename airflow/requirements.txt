@@ -23,3 +23,9 @@ pyarrow==13.0.0
 
 # Prometheus
 prometheus-client==0.16.0
+
+# for tests
+streamlit
+pandas
+pytest
+unittest
