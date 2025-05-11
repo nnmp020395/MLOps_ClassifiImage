@@ -13,7 +13,4 @@ faiss-cpu
 apache-airflow==2.9.0
 
 # for tests
-streamlit
-pandas
 pytest
-unittest
