@@ -18,7 +18,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Free disk space before build
+    - name: Free disk space before tests
       run: |
         echo "Disk before cleanup:"
         df -h
@@ -54,8 +54,13 @@ jobs:
         pytest tests/test_dags
         pytest tests/test_streamlit
 
+  # --------------------
+  # 2. INTEGRATION / DOCKER JOB
+  # --------------------
   build-and-test:
+    name: Run integration tests in Docker
     runs-on: ubuntu-latest
+    needs: unit-tests
 
     services:
       docker:

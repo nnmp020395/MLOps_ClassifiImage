@@ -1,12 +1,9 @@
 streamlit
 pandas
 pytest
-io
-PIL
+Pillow
 requests
-sys
-os
 torch
-airflow
+apache-airflow
 
 
