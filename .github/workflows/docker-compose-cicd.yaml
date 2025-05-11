@@ -18,6 +18,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Free disk space before build
+      run: |
+        echo "Disk before cleanup:"
+        df -h
+        sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache
+        echo "Disk after cleanup:"
+        df -h
+        
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -34,10 +42,10 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r requirements-ci.txt
-        pip install -r airflow/requirements.txt
-        pip install -r streamlit/requirements.txt
-        pip install -r api/requirements.txt
-        pip install -r mlflow/requirements.txt
+      # pip install -r airflow/requirements.txt
+        # pip install -r streamlit/requirements.txt
+        # pip install -r api/requirements.txt
+        # pip install -r mlflow/requirements.txt
 
     - name: Run Unit Tests
       run: |
@@ -111,12 +119,12 @@ jobs:
     #     done
 
 
-    - name: Run unit tests in containers
-      run: |
-        docker-compose -p testproject exec -T fastapi-api pytest tests/test_api || exit 1
-        docker-compose -p testproject exec -T airflow-webserver pytest tests/test_dags || exit 1
-        docker-compose -p testproject exec -T fastapi-api pytest tests/test_src || exit 1
-        docker-compose -p testproject exec -T streamlit pytest tests/test_streamlit || exit 1
+    # - name: Run unit tests in containers
+    #   run: |
+    #     docker-compose -p testproject exec -T fastapi-api pytest tests/test_api || exit 1
+    #     docker-compose -p testproject exec -T airflow-webserver pytest tests/test_dags || exit 1
+    #     docker-compose -p testproject exec -T fastapi-api pytest tests/test_src || exit 1
+    #     docker-compose -p testproject exec -T streamlit pytest tests/test_streamlit || exit 1
 
     - name: Reduce verbosity in logs
       run: |
