@@ -4,7 +4,8 @@ from airflow.models import DagBag
 class TestMLflowTrainDag(unittest.TestCase):
 
     def setUp(self):
-        self.dagbag = DagBag()
+        dags_folder = os.getenv('DAGS_FOLDER', 'airflow/dags')
+        self.dagbag = DagBag(dag_folder=dags_folder)
 
     def test_dag_loaded(self):
         """Le DAG doit être correctement chargé"""

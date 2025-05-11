@@ -47,6 +47,9 @@ jobs:
         # pip install -r api/requirements.txt
         # pip install -r mlflow/requirements.txt
 
+    - name: Set DAGS_FOLDER environment variable
+      run: echo "DAGS_FOLDER=$airflow/dags" >> $GITHUB_ENV
+
     - name: Run Unit Tests
       run: |
         for dir in tests/test_src tests/test_api tests/test_dags tests/test_streamlit; do
