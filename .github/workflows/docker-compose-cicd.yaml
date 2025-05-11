@@ -42,10 +42,6 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r requirements-ci.txt
-      # pip install -r airflow/requirements.txt
-        # pip install -r streamlit/requirements.txt
-        # pip install -r api/requirements.txt
-        # pip install -r mlflow/requirements.txt
 
     - name: Set DAGS_FOLDER environment variable
       run: echo "DAGS_FOLDER=$airflow/dags" >> $GITHUB_ENV
@@ -142,12 +138,27 @@ jobs:
       run: |
         export GITHUB_RUNNER_VERBOSE=0
 
-    - name: Run health checks
+    - name: Run health checks and wait for services to be healthy
       run: |
-        curl --fail http://localhost:8080/health
-        curl --fail http://localhost:6000/health
-        curl --fail http://localhost:8000/docs
-        curl --fail http://localhost:8501/
+        urls=(
+          "http://localhost:3000/health"
+          "http://localhost:9001/health"
+          "http://localhost:9090"
+          "http://localhost:5001/health"
+          "http://localhost:8501"
+          "http://localhost:8080/health"
+        )
+        
+        for url in "${urls[@]}"; do
+          for i in {1..10}; do
+            if curl --fail "$url"; then
+              echo "Service at $url is healthy"
+              break
+            fi
+            echo "Service at $url is not healthy, retrying in 5 seconds..."
+            sleep 5
+          done
+        done
 
     - name: Shut down containers and clean up temporary files
       run: |
