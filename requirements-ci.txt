@@ -4,6 +4,7 @@ pytest
 Pillow
 requests
 torch
+torchvision
 apache-airflow
 
 
