@@ -52,7 +52,7 @@ jobs:
 
     - name: Run Unit Tests
       run: |
-        for dir in tests/test_src; do
+        for dir in tests/test_src tests/test_streamlit; do
           if [ -d "$dir" ] && [ "$(find $dir -type f -name 'test_*.py' -exec grep -q 'def test_' {} \; -print)" ]; then
             echo "Running tests in $dir"
             pytest $dir || exit 1

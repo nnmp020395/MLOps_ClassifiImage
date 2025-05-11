@@ -6,5 +6,6 @@ requests
 torch
 torchvision
 apache-airflow
+prometheus-client
 
 

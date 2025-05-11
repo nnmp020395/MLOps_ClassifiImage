@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 from io import BytesIO
 from PIL import Image
 import requests
+from prometheus_client import REGISTRY, Counter
 
 class TestStreamlitApp(unittest.TestCase):
 
@@ -31,7 +32,6 @@ class TestStreamlitApp(unittest.TestCase):
         mock_post.assert_called_once()
 
     def test_metrics_counter_increment(self):
-        from prometheus_client import REGISTRY, Counter
 
         # Setup or retrieve the counter
         try:
