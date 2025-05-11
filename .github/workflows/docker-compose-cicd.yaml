@@ -49,10 +49,14 @@ jobs:
 
     - name: Run Unit Tests
       run: |
-        pytest tests/test_src
-        pytest tests/test_api
-        pytest tests/test_dags
-        pytest tests/test_streamlit
+        for dir in tests/test_src tests/test_api tests/test_dags tests/test_streamlit; do
+          if [ -d "$dir" ] && [ "$(find $dir -type f -name 'test_*.py' -exec grep -q 'def test_' {} \; -print)" ]; then
+            echo "Running tests in $dir"
+            pytest $dir || exit 1
+          else
+            echo "Skipping $dir — no test functions found"
+          fi
+        done
 
   # --------------------
   # 2. INTEGRATION / DOCKER JOB
@@ -124,7 +128,7 @@ jobs:
     #     done
 
 
-    # - name: Run unit tests in containers
+    # - name: Run containers tests
     #   run: |
     #     docker-compose -p testproject exec -T fastapi-api pytest tests/test_api || exit 1
     #     docker-compose -p testproject exec -T airflow-webserver pytest tests/test_dags || exit 1
