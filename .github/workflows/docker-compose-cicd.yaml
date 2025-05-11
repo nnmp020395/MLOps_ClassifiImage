@@ -32,12 +32,19 @@ jobs:
           ${{ runner.os }}-pip-
 
     - name: Install dependencies
-      run: pip install -r requirements-ci.txt
+      run: |
+        pip install -r requirements-ci.txt
+        pip install -r airflow/requirements.txt
+        pip install -r streamlit/requirements.txt
+        pip install -r api/requirements.txt
+        pip install -r mlflow/requirements.txt
 
     - name: Run Unit Tests
       run: |
         pytest tests/test_src
-
+        pytest tests/test_api
+        pytest tests/test_dags
+        pytest tests/test_streamlit
 
   build-and-test:
     runs-on: ubuntu-latest
