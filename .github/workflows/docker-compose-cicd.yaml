@@ -7,6 +7,38 @@ on:
     branches: [ '*' ]
 
 jobs:
+  # --------------------
+  # 1. UNIT TEST JOB
+  # --------------------
+  unit-tests:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-ci.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: pip install -r requirements-ci.txt
+
+    - name: Run Unit Tests
+      run: |
+        pytest tests/test_src
+
+
   build-and-test:
     runs-on: ubuntu-latest
 
