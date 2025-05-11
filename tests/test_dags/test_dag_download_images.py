@@ -20,7 +20,7 @@ class TestMLFlowDag(unittest.TestCase):
 
     def test_task_list(self):
         """Test task list in DAG"""
-        dag = self.dagbag.dags['mlops_project_pipeline_sqlite']
+        dag = self.dagbag.dags['mlops_project_get_store_images']
         task_ids = list(dag.task_dict.keys())
         expected_tasks = [
             'start_task',
@@ -32,7 +32,7 @@ class TestMLFlowDag(unittest.TestCase):
 
     def test_dependencies(self):
         """Test task dependencies"""
-        dag = self.dagbag.dags['mlops_project_pipeline_sqlite']
+        dag = self.dagbag.dags['mlops_project_get_store_images']
         self.assertEqual(
             dag.task_dict['insert_urls_to_postgresql'].upstream_task_ids,
             {'start_task'}

@@ -10,7 +10,7 @@ class TestMLflowTrainDag(unittest.TestCase):
 
     def test_dag_loaded(self):
         """Le DAG doit être correctement chargé"""
-        dag_id = "dinov2_train_pipeline_with_mlflow"
+        dag_id = "dinov2_train_pipeline"
         self.assertIn(dag_id, self.dagbag.dags)
         self.assertFalse(
             len(self.dagbag.import_errors),
@@ -19,14 +19,14 @@ class TestMLflowTrainDag(unittest.TestCase):
 
     def test_task_exists(self):
         """La tâche 'mlflow_tracking' doit exister dans le DAG"""
-        dag = self.dagbag.dags["dinov2_train_pipeline_with_mlflow"]
+        dag = self.dagbag.dags["dinov2_train_pipeline"]
         task_ids = list(dag.task_dict.keys())
-        self.assertIn("mlflow_tracking", task_ids)
+        self.assertIn("Entrainement_du_modele", task_ids)
 
     def test_task_is_python_operator(self):
         """La tâche doit être un PythonOperator"""
-        dag = self.dagbag.dags["dinov2_train_pipeline_with_mlflow"]
-        task = dag.get_task("mlflow_tracking")
+        dag = self.dagbag.dags["dinov2_train_pipeline"]
+        task = dag.get_task("Entrainement_du_modele")
         from airflow.operators.python import PythonOperator
         self.assertIsInstance(task, PythonOperator)
 
