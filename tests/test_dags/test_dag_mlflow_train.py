@@ -1,4 +1,5 @@
 import unittest
+import os
 from airflow.models import DagBag
 
 class TestMLflowTrainDag(unittest.TestCase):
