@@ -57,6 +57,8 @@ jobs:
         echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
         echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
         echo "AWS_DEFAULT_REGION=${{ secrets.AWS_DEFAULT_REGION }}" >> $GITHUB_ENV
+        echo "AIRFLOW_UID=${{ secrets.AIRFLOW_UID }}" >> $GITHUB_ENV
+        echo "MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}" >> $GITHUB_ENV
 
     - name: Build and run containers
       run: |
