@@ -11,7 +11,7 @@ class TestMLFlowDag(unittest.TestCase):
 
     def test_dag_loaded(self):
         """Test if the DAG is correctly loaded"""
-        dag_id = 'mlops_project_pipeline_sqlite'
+        dag_id = 'mlops_project_get_store_images'
         self.assertIn(dag_id, self.dagbag.dags)
         self.assertFalse(
             len(self.dagbag.import_errors),
