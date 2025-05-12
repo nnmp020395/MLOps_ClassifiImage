@@ -1,3 +1,4 @@
+import os
 import unittest
 from unittest.mock import MagicMock, patch
 import io
@@ -7,15 +8,13 @@ from PIL import Image
 from torch.utils.data import Subset
 from torchvision.transforms import transforms
 
-parent_folder = "/src"
-if parent_folder not in sys.path:
-    sys.path.append(parent_folder)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 from src.train import S3ImageFolder, stratified_split
 
 class TestS3ImageFolder(unittest.TestCase):
 
-    def setUp(self):
+    def test_setUp(self):
         # Mock the S3 filesystem
         self.mock_fs = MagicMock()
         self.mock_fs.ls.return_value = [
@@ -56,7 +55,7 @@ class TestS3ImageFolder(unittest.TestCase):
 
 class TestStratifiedSplit(unittest.TestCase):
 
-    def setUp(self):
+    def test_setUp(self):
         # Create a mock dataset
         self.mock_dataset = MagicMock()
         self.mock_dataset.samples = [
