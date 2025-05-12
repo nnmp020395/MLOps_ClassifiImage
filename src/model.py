@@ -56,29 +56,38 @@ class DinoClassifier(nn.Module):
 
 def load_model(model_path="dinov2_classifier.pth"):
     """
-    Charge un modèle depuis un fichier local ou S3.
+    Charge un modèle depuis un fichier local, S3 ou un buffer en mémoire (BytesIO).
 
     Args:
-        model_path (str): Chemin vers le modèle (chemin local ou s3://...).
+        model_path (str or BytesIO): Chemin du fichier ou buffer en mémoire.
 
     Returns:
-        DinoClassifier: Modèle chargé.
+        DinoClassifier: Modèle PyTorch chargé.
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dino_backbone = torch.hub.load("facebookresearch/dinov2", "dinov2_vits14")
     model = DinoClassifier(dino_backbone, num_classes=2).to(device)
 
-    if model_path.startswith("s3://"):
-        fs = s3fs.S3FileSystem(
-            key=minio_key,
-            secret=minio_secret,
-            client_kwargs={"endpoint_url": minio_endpoint}
-        )
-        with fs.open(model_path, "rb") as f:
-            buffer = io.BytesIO(f.read())
-            model.load_state_dict(torch.load(buffer, map_location="cpu"))
-    else:
+    if isinstance(model_path, str):
+        if model_path.startswith("s3://"):
+            fs = s3fs.S3FileSystem(
+                key=minio_key,
+                secret=minio_secret,
+                client_kwargs={"endpoint_url": "http://minio:9000"},
+            )
+            with fs.open(model_path, "rb") as f:
+                buffer = io.BytesIO(f.read())
+                model.load_state_dict(torch.load(buffer, map_location="cpu"))
+        else:
+            model.load_state_dict(torch.load(model_path, map_location="cpu"))
+
+    elif isinstance(model_path, io.BytesIO):
         model.load_state_dict(torch.load(model_path, map_location="cpu"))
+
+    else:
+        raise ValueError(
+            "Paramètre 'model_path' doit être un chemin (str) ou un BytesIO."
+        )
 
     model.eval()
     return model
