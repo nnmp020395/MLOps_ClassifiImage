@@ -7,12 +7,10 @@ from PIL import Image
 from torch.utils.data import Subset
 from torchvision.transforms import transforms
 
-# Import the necessary components from your script
 parent_folder = "/src"
 if parent_folder not in sys.path:
     sys.path.append(parent_folder)
 
-# Now you can import the module from the subfolder
 from src.train import S3ImageFolder, stratified_split
 
 class TestS3ImageFolder(unittest.TestCase):
