@@ -127,6 +127,10 @@ jobs:
       run: |
         DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose -p testproject -f docker-compose.yaml up -d --build
 
+    - name: Run integration tests
+      run: |
+        pytest tests/integration/
+
     # - name: Copy and install test dependencies
     #   run: |
     #     for service in fastapi-api airflow-webserver streamlit; do
