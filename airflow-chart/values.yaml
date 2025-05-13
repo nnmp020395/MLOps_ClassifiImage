@@ -1,0 +1,21 @@
+replicaCount: 1
+
+image:
+  repository: apache/airflow
+  tag: 2.8.2
+  pullPolicy: IfNotPresent
+
+postgres:
+  conn: postgresql+psycopg2://airflow:airflow@postgres/airflow
+
+airflow:
+  executor: LocalExecutor
+  loadExamples: "false"
+  databaseUrl: postgresql+psycopg2://airflow:airflow@postgres/airflow
+  webUser: airflow
+  webPassword: airflow
+
+minio:
+  accessKey: minioadmin
+  secretKey: minioadmin
+  endpoint: http://minio:9000

@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-airflow-scheduler
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: airflow-scheduler
+  template:
+    metadata:
+      labels:
+        app: airflow-scheduler
+    spec:
+      containers:
+        - name: airflow-scheduler
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - scheduler
+          env:
+            - name: AIRFLOW__API__ACCESS_CONTROL_ALLOW_HEADERS
+              value: content-type, origin, authorization, accept
+            - name: AIRFLOW__API__ACCESS_CONTROL_ALLOW_METHODS
+              value: GET, POST, OPTIONS, DELETE
+            - name: AIRFLOW__API__ACCESS_CONTROL_ALLOW_ORIGINS
+              value: '*'
+            - name: AIRFLOW__CORE__EXECUTOR
+              value: {{ .Values.airflow.executor }}
+            - name: AIRFLOW__CORE__LOAD_EXAMPLES
+              value: "{{ .Values.airflow.loadExamples }}"
+            - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+              value: {{ .Values.postgres.conn }}
+            - name: AWS_ACCESS_KEY_ID
+              value: {{ .Values.minio.accessKey }}
+            - name: AWS_SECRET_ACCESS_KEY
+              value: {{ .Values.minio.secretKey }}
+            - name: AWS_DEFAULT_REGION
+              value: us-east-1
+            - name: S3_ENDPOINT
+              value: {{ .Values.minio.endpoint }}
