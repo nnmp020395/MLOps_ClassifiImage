@@ -1,9 +1,10 @@
 replicaCount: 1
 
-image:
-  repository: apache/airflow
-  tag: 2.8.2
-  pullPolicy: IfNotPresent
+images:
+  airflow:
+    repository: nnmp020395/mlops_classifiimage-airflow-custom
+    tag: latest
+    pullPolicy: IfNotPresent
 
 postgres:
   conn: postgresql+psycopg2://airflow:airflow@postgres/airflow
@@ -18,4 +19,5 @@ airflow:
 minio:
   accessKey: minioadmin
   secretKey: minioadmin
-  endpoint: http://minio:9000
+  endpoint: http://minio.default.svc.cluster.local:9000
+  bucket: image-dandelion-grass
