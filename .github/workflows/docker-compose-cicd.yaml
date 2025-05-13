@@ -51,22 +51,10 @@ jobs:
       run: |
         pip install -r requirements-ci.txt
 
-    # - name: Set DAGS_FOLDER environment variable
-    #   run: echo "DAGS_FOLDER=$airflow/dags" >> $GITHUB_ENV
-
     - name: Run Unit Tests
       run: |
         pytest tests/test_streamlit/test_app_streamlit.py || exit 1
         pytest tests/test_src/test_inference.py || exit 1
-
-      # for dir in tests/test_streamlit; do
-      #   if [ -d "$dir" ] && [ "$(find $dir -type f -name 'test_*.py' -exec grep -q 'def test_' {} \; -print)" ]; then
-      #     echo "Running tests in $dir"
-      #     pytest $dir || exit 1
-      #   else
-      #     echo "Skipping $dir — no test functions found"
-      #   fi
-      # done
 
   # --------------------
   # 2. INTEGRATION / DOCKER JOB
@@ -130,32 +118,6 @@ jobs:
       run: |
         DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose -p testproject -f docker-compose.yaml up -d --build
 
-# install pytest to check integrity of dags
-    - name: Install dependencies in containers
-      run: |
-        for service in fastapi-api airflow-webserver streamlit; do
-          docker-compose -p testproject exec -T $service pip install pytest
-        done
-
-    - name: Run integration tests
-      run: |
-        pytest tests/integration/
-
-    # - name: Copy and install test dependencies
-    #   run: |
-    #     for service in fastapi-api airflow-webserver streamlit; do
-    #       docker cp requirements-ci.txt testproject_${service}_1:/tmp/requirements-ci.txt
-    #       docker-compose -p testproject exec -T $service pip install --no-cache-dir -r /tmp/requirements-ci.txt
-    #     done
-
-
-    # - name: Run containers tests
-    #   run: |
-    #     docker-compose -p testproject exec -T fastapi-api pytest tests/test_api || exit 1
-    #     docker-compose -p testproject exec -T airflow-webserver pytest tests/test_dags || exit 1
-    #     docker-compose -p testproject exec -T fastapi-api pytest tests/test_src || exit 1
-    #     docker-compose -p testproject exec -T streamlit pytest tests/test_streamlit || exit 1
-
     - name: Reduce verbosity in logs
       run: |
         export GITHUB_RUNNER_VERBOSE=0
@@ -181,9 +143,3 @@ jobs:
             sleep 5
           done
         done
-
-    # - name: Shut down containers and clean up temporary files
-    #   run: |
-    #     docker-compose down
-    #     rm -rf /tmp/*
-    #     rm -rf ~/.cache/* 
