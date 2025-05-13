@@ -33,6 +33,26 @@ After running the docker compose, click on `streamlit` image to run the webapp b
 
 ## 4. Storage
 
+- Production environment
+
+Structure of minio-chart to deploy on Kubernetes with Helm:
+```bash
+└── minio-chart # Top-level folder for charts
+    └──Chart.yaml #
+    └──values.yaml #
+    └──templates  #
+        └──minio-deployment.yaml
+        └──minio-service.yaml
+```
+
+Command line for running the `minio` release with the official template Bitnami
+
+```bash
+helm install minio bitnami/minio \
+  --set rootUser=minioadmin \
+  --set rootPassword=minioadmin
+```
+
 ## 5. Model architecture
 
 Our goal is to build a binary image classification model that distinguishes between images of **dandelion** and **grass**. \
@@ -44,6 +64,21 @@ We use the DINOv2 vision transformer model as a feature extractor. DINOv2 is a s
 The model achieves more **90%** accuracy on the test set and shows good generalization on both sunny and shaded outdoor scenes.
 
 ## 6. Automated pipeline
+- Production environment
+
+Structure of airflow-chart to deploy on Kubernetes with Helm:
+```bash
+└── airflow-chart # Top-level folder for charts
+    └──Chart.yaml #
+    └──values.yaml #
+    └──templates  #
+        └──airflow-init-deployment.yaml
+        └──airflow-scheduler-deployment.yaml
+        └──airflow-triggerer-deployment.yaml
+        └──airflow-webserver-deployment.yaml
+        └──airflow-init-cm0-configmap.yaml
+```
+
 
 ## 7. Inference on the model
 
@@ -73,6 +108,16 @@ curl -X POST http://localhost:8000/predict \
 ```
 ### TODO
 - Production environment
+
+Structure of fastapi-chart to deploy on Kubernetes with Helm:
+```bash
+└── fastapi-chart # Top-level folder for charts
+    └──Chart.yaml #
+    └──values.yaml #
+    └──templates  #
+        └──deployment.yaml
+        └──service.yaml
+```
 
 ### Via Streamlit
 
