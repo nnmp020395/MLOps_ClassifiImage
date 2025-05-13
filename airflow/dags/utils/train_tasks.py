@@ -13,10 +13,11 @@ import subprocess
 import boto3
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import BranchPythonOperator, PythonOperator
+from io import BytesIO
 
 # ------------------ CONFIGURATION ------------------
 BUCKET = "image-dandelion-grass"
-PREFIX_RAW = "raw/new_data/validated_data/"
+PREFIX_RAW = "raw/new_data/corrected_data/"
 MINIO_CLIENT = boto3.client(
     "s3",
     endpoint_url=os.getenv("MINIO_ENDPOINT", "http://minio:9000"),
@@ -51,24 +52,49 @@ def check_minio_image_count() -> bool:
         return False
 
 
-def run_mlflow_tracking():
+def update_database():
     """
-    Lance le script de tracking MLFlow.
+    Déplace les images validées depuis 'raw/new_data/corrected_data/' vers
+    'raw/dandelion/' ou 'raw/grass/', selon leur nom.
+    Le suffixe de classe (_dandelion ou _grass) est retiré du nom de fichier.
     """
-    logging.info("Lancement du script mlflow_tracking.py via subprocess.")
+    logging.info("Mise à jour de la base de données MinIO avec les images validées.")
+    
     try:
-        result = subprocess.run(
-            ["python", "/opt/airflow/src/mlflow_tracking.py"],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        logging.info("Script exécuté avec succès.")
-        logging.info("STDOUT:\n" + result.stdout)
-        logging.info("STDERR:\n" + result.stderr)
-    except subprocess.CalledProcessError as e:
-        logging.error("Échec du script mlflow_tracking.py.")
-        logging.error("STDOUT:\n" + e.stdout)
-        logging.error("STDERR:\n" + e.stderr)
-        raise e
+        response = MINIO_CLIENT.list_objects_v2(Bucket=BUCKET, Prefix=PREFIX_RAW)
+        objects = response.get("Contents", [])
+        image_keys = [obj["Key"] for obj in objects if obj["Key"].endswith((".jpg", ".jpeg", ".png"))]
+
+        for key in image_keys:
+            filename = os.path.basename(key)
+
+            # Receuil de la classe à partir du nom
+            if "_dandelion" in filename:
+                class_label = "dandelion"
+            elif "_grass" in filename:
+                class_label = "grass"
+            else:
+                logging.warning(f"Nom de fichier non conforme, ignoré : {filename}")
+                continue
+
+            # Nettoie le nom de fichier
+            cleaned_filename = filename.replace(f"_{class_label}", "")
+            new_key = f"raw/{class_label}/{cleaned_filename}"
+
+            # On télécharge
+            buffer = BytesIO()
+            MINIO_CLIENT.download_fileobj(BUCKET, key, buffer)
+            buffer.seek(0)
+
+            # On dépose
+            MINIO_CLIENT.upload_fileobj(buffer, BUCKET, new_key)
+            logging.info(f"Image déplacée : {key} → {new_key}")
+
+            # On supprime l'original
+            MINIO_CLIENT.delete_object(Bucket=BUCKET, Key=key)
+
+        logging.info("Mise à jour de minio terminée.")
+
+    except Exception as e:
+        logging.error(f"Erreur lors de la mise à jour de la base de données : {e}")
+        raise

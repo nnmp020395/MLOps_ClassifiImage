@@ -114,6 +114,24 @@ if page == "Public":
                     prediction = response.json().get("prediction")
                     st.success(f"Résultat : **{prediction}**")
                     logger.info(f"Prédiction : {prediction}")
+
+                    # Vérification des doublons après prédiction
+                    with st.spinner("Vérification des doublons..."):
+                        duplicate_response = requests.post(
+                            url="http://fastapi-api:8000/check_duplicate",
+                            files={"file": uploaded_file.getvalue()},
+                            data={"label": prediction},
+                        )
+
+                        if duplicate_response.status_code == 200:
+                            result = duplicate_response.json()
+                            status = result.get("status")
+                            message = result.get("message")
+                            st.info("À bientôt !")
+                            logger.info(f"Doublon : {status} - {message}")
+                        else:
+                            st.error(f"Erreur API doublon : {duplicate_response.text}")
+
                     st.markdown(
                         """
                         Consultez les dashboards :
@@ -127,6 +145,7 @@ if page == "Public":
             except requests.exceptions.ConnectionError:
                 st.error("Connexion à l'API impossible.")
 
+# -------------------- ADMIN INTERFACE ------------------
 elif page == "Admin":
     st.title("Interface Admin : Validation des prédictions")
     password = st.text_input("Mot de passe admin :", type="password")
@@ -207,7 +226,7 @@ elif page == "Admin":
             with lock:
                 if validated and not error:
                     new_filename = f"{uuid4().hex}_{predicted_label}.jpg"
-                    validated_key = f"raw/corrected_data/new_data/{new_filename}"
+                    validated_key = f"raw/new_data/corrected_data/{new_filename}"
 
                     buf = BytesIO()
                     s3.download_fileobj(bucket_name, key, buf)
@@ -232,7 +251,7 @@ elif page == "Admin":
                         "grass" if predicted_label == "dandelion" else "dandelion"
                     )
                     new_filename = f"{uuid4().hex}_{corrected_label}.jpg"
-                    corrected_key = f"raw/corrected_data/new_data/{new_filename}"
+                    corrected_key = f"raw/new_data/corrected_data/{new_filename}"
 
                     buf = BytesIO()
                     s3.download_fileobj(bucket_name, key, buf)

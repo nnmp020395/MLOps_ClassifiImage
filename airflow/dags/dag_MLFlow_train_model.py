@@ -28,6 +28,7 @@ with DAG(
     schedule_interval=None,
     start_date=datetime(2024, 4, 10),
     catchup=True,
+    is_paused_upon_creation=False,
 ) as dag:
 
     def run_mlflow_tracking():

@@ -47,6 +47,7 @@ with DAG(
     start_date=datetime(2025, 2, 19),
     catchup=False,
     tags=["example"],
+    is_paused_upon_creation=False,
 ) as dag:
     dag.doc_md = """
     MLOps pipeline for classification model.
