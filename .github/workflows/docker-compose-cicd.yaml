@@ -168,8 +168,8 @@ jobs:
           done
         done
 
-    - name: Shut down containers and clean up temporary files
-      run: |
-        docker-compose down
-        rm -rf /tmp/*
-        rm -rf ~/.cache/* 
+    # - name: Shut down containers and clean up temporary files
+    #   run: |
+    #     docker-compose down
+    #     rm -rf /tmp/*
+    #     rm -rf ~/.cache/* 
