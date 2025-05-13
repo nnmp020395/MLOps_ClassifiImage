@@ -56,14 +56,17 @@ jobs:
 
     - name: Run Unit Tests
       run: |
-        for dir in tests/test_streamlit; do
-          if [ -d "$dir" ] && [ "$(find $dir -type f -name 'test_*.py' -exec grep -q 'def test_' {} \; -print)" ]; then
-            echo "Running tests in $dir"
-            pytest $dir || exit 1
-          else
-            echo "Skipping $dir — no test functions found"
-          fi
-        done
+        pytest tests/test_streamlit/test_app_streamlit.py || exit 1
+        pytest tests/test_src/test_inference.py || exit 1
+
+      # for dir in tests/test_streamlit; do
+      #   if [ -d "$dir" ] && [ "$(find $dir -type f -name 'test_*.py' -exec grep -q 'def test_' {} \; -print)" ]; then
+      #     echo "Running tests in $dir"
+      #     pytest $dir || exit 1
+      #   else
+      #     echo "Skipping $dir — no test functions found"
+      #   fi
+      # done
 
   # --------------------
   # 2. INTEGRATION / DOCKER JOB
@@ -126,6 +129,13 @@ jobs:
     - name: Build and run containers
       run: |
         DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose -p testproject -f docker-compose.yaml up -d --build
+
+# install pytest to check integrity of dags
+    - name: Install dependencies in containers
+      run: |
+        for service in fastapi-api airflow-webserver streamlit; do
+          docker-compose -p testproject exec -T $service pip install pytest
+        done
 
     - name: Run integration tests
       run: |
