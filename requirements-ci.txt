@@ -1,4 +1,12 @@
 streamlit
 pandas
 pytest
-unittest
+pillow==10.3.0
+requests==2.31.0
+torch==2.2.2
+torchvision==0.17.2
+apache-airflow==2.9.0
+prometheus-client==0.16.0
+sqlalchemy==1.4.52
+psycopg2-binary==2.9.10
+

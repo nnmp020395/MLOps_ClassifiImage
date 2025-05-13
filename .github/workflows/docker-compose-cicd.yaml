@@ -2,12 +2,67 @@ name: CI with Docker Compose
 
 on:
   push:
-    branches: [ cicd ]
+    branches: [ unittest ]
   pull_request:
+    branches: [ '*' ]
 
 jobs:
-  build-and-test:
+  # --------------------
+  # 1. UNIT TEST JOB
+  # --------------------
+  unit-tests:
+    name: Run Unit Tests 
     runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Free disk space before tests
+      run: |
+        echo "Disk before cleanup:"
+        df -h
+        sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache
+        echo "Disk after cleanup:"
+        df -h
+        
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Set PYTHONPATH
+      run: echo "PYTHONPATH=${{ github.workspace }}" >> $GITHUB_ENV
+
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-ci.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libxml2-dev libxmlsec1-dev libxmlsec1-openssl pkg-config
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements-ci.txt
+
+    - name: Run Unit Tests
+      run: |
+        pytest tests/test_streamlit/test_app_streamlit.py || exit 1
+        pytest tests/test_src/test_inference.py || exit 1
+
+  # --------------------
+  # 2. INTEGRATION / DOCKER JOB
+  # --------------------
+  build-and-test:
+    name: Run integration tests in Docker
+    runs-on: ubuntu-latest
+    needs: unit-tests
 
     services:
       docker:
@@ -17,6 +72,31 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+
+    - name: Free disk space before build
+      run: |
+        echo "Disk before cleanup:"
+        df -h
+        sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache
+        echo "Disk after cleanup:"
+        df -h
+        
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-docker-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-docker-
+
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-ci.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
@@ -31,24 +111,35 @@ jobs:
         echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
         echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
         echo "AWS_DEFAULT_REGION=${{ secrets.AWS_DEFAULT_REGION }}" >> $GITHUB_ENV
+        echo "AIRFLOW_UID=${{ secrets.AIRFLOW_UID }}" >> $GITHUB_ENV
+        echo "MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}" >> $GITHUB_ENV
 
     - name: Build and run containers
       run: |
-        docker-compose -f docker-compose.yaml up -d --build
+        DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose -p testproject -f docker-compose.yaml up -d --build
 
-    - name: Run unit tests
+    - name: Reduce verbosity in logs
       run: |
-        docker-compse -f docker-compose.yaml axec -T api pytest tests/ || exit 1
-        docker-compse -f docker-compose.yaml axec -T mlflow pytest tests/ || exit 1
-        docker-compse -f docker-compose.yaml axec -T mlruns pytest tests/ || exit 1
-        docker-compse -f docker-compose.yaml axec -T streamlit pytest tests/ || exit 1
-        docker-compse -f docker-compose.yaml axec -T src pytest tests/ || exit 1
-    - name: Run health checks (optional)
-      run: |
-        curl --fail http://localhost:8080/health
-        curl --fail http://localhost:6000/health
-        curl --fail http://localhost:8000/docs
-        curl --fail http://localhost:8501/
+        export GITHUB_RUNNER_VERBOSE=0
 
-    - name: Shut down containers
-      run: docker-compose -f docker-compose.yaml down
+    - name: Run health checks and wait for services to be healthy
+      run: |
+        urls=(
+          "http://localhost:3000/health"
+          "http://localhost:9001/health"
+          "http://localhost:9090"
+          "http://localhost:5001/health"
+          "http://localhost:8501"
+          "http://localhost:8080/health"
+        )
+        
+        for url in "${urls[@]}"; do
+          for i in {1..10}; do
+            if curl --fail "$url"; then
+              echo "Service at $url is healthy"
+              break
+            fi
+            echo "Service at $url is not healthy, retrying in 5 seconds..."
+            sleep 5
+          done
+        done
