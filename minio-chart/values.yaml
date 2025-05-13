@@ -1,5 +1,9 @@
 replicatCount: 1
 
+global:
+  security:
+    allowInsecureImages: true
+
 image:
   repository: minio/minio
   tag: latest
@@ -9,7 +13,10 @@ minio:
   enable: true
   accessKey: minioadmin
   secretKey: minioadmin
-  bucketName: image-dandelion-grass
+  defaultBuckets: image-dandelion-grass
+  rootUser: minioadmin
+  rootPassword: minioadmin
+  mode: standalone
 
 service:
   type: NodePort
