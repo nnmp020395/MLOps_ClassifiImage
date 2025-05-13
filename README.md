@@ -30,7 +30,52 @@ After running the docker compose, click on `streamlit` image to run the webapp b
 ## Prod environement
 
 ## 3. Dataset
+The dataset used in this project consists of RGB images labeled as either "dandelion" or "grass", intended for binary image classification.
 
+The training and validation sets are manually curated and stored in MinIO.
+Images can be added dynamically through the Streamlit interface, and manually validated by an admin before being used for retraining.
+Images are collected from public datasets and user uploads. All data is centralized in an S3-compatible MinIO bucket, ensuring scalability, high availability, and seamless integration with the MLOps pipeline.
+
+## 4. Storage
+
+### in PostgreSQL
+A PostgreSQL database keeps track of all the processed images. The **plants_data** table includes the following fields:
+
+| Column Name | Description                       |
+| ----------- | --------------------------------- |
+| id          | Unique identifier (auto)          |
+| url\_source | Original name or source URL       |
+| label       | Image class (`dandelion`/`grass`) |
+| url\_s3     | Full MinIO path to the image      |
+
+### in Minio Bucket: ```image-dandelion-grass```
+
+MinIO is used as the central object store for both training/inference images and serialized model weights. It provides a lightweight, self-hosted, and S3-compatible storage solution integrated into the entire MLOps workflow.
+
+The project stores data inside the image-dandelion-grass bucket, following the structure below:
+
+``` bash
+image-dandelion-grass/
+├── model/
+│   ├── YYYY-MM-DD/               # Folder per training date
+│   │   ├── dinov2_classifier_0.pth
+│   │   ├── dinov2_classifier_1.pth
+│   │   └── ...                   # Multiple versions for each training session
+├── raw/
+│   ├── dandelion/                # Manually validated images labeled "dandelion"
+│   ├── grass/                    # Manually validated images labeled "grass"
+│   └── new_data/
+│       ├── pending_validation/   # User-submitted images awaiting admin validation
+│       └── corrected_data/       # Admin-labeled and approved images 
+```
+
+A DAG in Airflow periodically checks for new validated images in corrected_data/. When 10 or more new images are available, they are:
+
+1. Moved to their appropriate class folders (raw/dandelion/ or raw/grass/),
+2. Registered in a PostgreSQL database, which stores metadata including the file name, label, and full MinIO URL,
+3. Used to automatically retrain the classification model.
+
+![Retrain model](./images/retrain_model_scheme.png)
 ## 4. Storage
 
 - Production environment
