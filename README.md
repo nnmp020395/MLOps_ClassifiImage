@@ -12,25 +12,30 @@ Airflow orchestrates the pipeline for the download and storage of the database, 
 
 ## 2. Quick setup
 
-## Dev environement
+### Dev environement
 
-### Run Docker
+* Run Docker
+
 For the 1st time
 ```bash
-docker compose up -d -build
+docker compose up -d --build
 ```
 otherwise
 ```bash
 docker compose up
 ```
-### Run webapp
-After running the docker compose, click on `streamlit` image to run the webapp brownser.
+
+All docker images for the project are also available at : https://hub.docker.com/repository/docker/indirafa/mlops_classifimage/. 
+
+* Run the webapp
+
+After running the docker compose, go to http://localhost:8501 to access the webapp.
 
 
-## Prod environement
+### Prod environement
 
 ## 3. Dataset
-The dataset used in this project consists of RGB images labeled as either "dandelion" or "grass", intended for binary image classification.
+The dataset used in this project consists of RGB images labeled as either "dandelion" or "grass", intended for binary image classification, available at https://github.com/btphan95/greenr-airflow/tree/master/dat.
 
 The training and validation sets are manually curated and stored in MinIO.
 Images can be added dynamically through the Streamlit interface, and manually validated by an admin before being used for retraining.
@@ -98,7 +103,7 @@ helm install minio bitnami/minio \
   --set rootPassword=minioadmin
 ```
 
-## 5. Model architecture
+## 5. Model training
 
 Our goal is to build a binary image classification model that distinguishes between images of **dandelion** and **grass**. \
 The input to the model is a single RGB image, resize to 224x224 pixels and the output is a binary prediction : either class 0 (dandelion) or class 1 (grass).
@@ -107,6 +112,10 @@ The input to the model is a single RGB image, resize to 224x224 pixels and the o
 We use the DINOv2 vision transformer model as a feature extractor. DINOv2 is a self-supervised vision transformer retrained on large-scale image datasets. Specifically, we use the ViT-S/14 variant of DINOv2 without fine-tuning its internal weights. Instead of, we extract a feature embedding from the [CLS] token of the last transformer layer. The DINOv2 output is passed through a simple classification head. We freeze the DINOv2 backbone and train only the classification head. The model is trained using binary cross-entropy loss, optimized with Adam at learning rate of 0.003.
 
 The model achieves more **90%** accuracy on the test set and shows good generalization on both sunny and shaded outdoor scenes.
+
+### Training monitoring with Mlflow
+
+ajouter images + expliquer
 
 ## 6. Automated pipeline
 - Production environment
@@ -188,7 +197,12 @@ Structure of the /streamlit folder:
 
 The Streamlit app is accessible at the url : http://localhost:8501. A prediction can be obtained by directly drag and dropping an image or uploading from your local machine.
 
-### TODO last version of screenshot streamlit
+![Streamlit page 1](./images/streamlit_page1.png)
+
+A second page, accessible with a password, allows an admin to check the label attributed to submitted images, correct it if necessary, and store the correctly labeled image in the minio database. These new images are then use for retraining the model.
+
+![Streamlit page 2](./images/streamlit_page2.png)
+
 ### TODO prod env
 
 
@@ -237,3 +251,5 @@ The Streamlit monitoring dashboard is set up to display page views and total pre
 ![Streamlit monitoring](./images/streamlit_monitoring.png)
 
 ## 4. Conclusion and next steps
+
+set up a vector database (ex : xxx)
