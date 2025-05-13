@@ -78,7 +78,12 @@ Structure of airflow-chart to deploy on Kubernetes with Helm:
         └──airflow-webserver-deployment.yaml
         └──airflow-init-cm0-configmap.yaml
 ```
+Command line for running the `airflow` release
 
+```bash
+helm install myrelease apache-airflow/airflow -f values.yaml \
+    --namespace airflow --create-namespace
+```
 
 ## 7. Inference on the model
 
