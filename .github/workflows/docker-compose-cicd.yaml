@@ -11,7 +11,7 @@ jobs:
   # 1. UNIT TEST JOB
   # --------------------
   unit-tests:
-    name: Run dags Unit Tests 
+    name: Run Unit Tests 
     runs-on: ubuntu-latest
 
     steps:
@@ -49,14 +49,14 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install -r airflow/requirements.txt
+        pip install -r requirements-ci.txt
 
-    - name: Set DAGS_FOLDER environment variable
-      run: echo "DAGS_FOLDER=$airflow/dags" >> $GITHUB_ENV
+    # - name: Set DAGS_FOLDER environment variable
+    #   run: echo "DAGS_FOLDER=$airflow/dags" >> $GITHUB_ENV
 
     - name: Run Unit Tests
       run: |
-        for dir in tests/test_dags; do
+        for dir in tests/test_streamlit; do
           if [ -d "$dir" ] && [ "$(find $dir -type f -name 'test_*.py' -exec grep -q 'def test_' {} \; -print)" ]; then
             echo "Running tests in $dir"
             pytest $dir || exit 1
