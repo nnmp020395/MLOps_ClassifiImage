@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from utils.train_tasks import check_minio_image_count
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+from utils.train_tasks import update_database_and_store_metadata
 
 from airflow import DAG
 
@@ -35,6 +36,13 @@ with DAG(
         python_callable=check_minio_image_count,
         doc="Vérifie si au moins 10 nouvelles images sont présentes dans MinIO.",
     )
+    # --------- MISE À JOUR DE LA BASE DE DONNÉES ----------
+    update_database = PythonOperator(
+        task_id="MAJ_database",
+        python_callable=update_database_and_store_metadata,
+        doc="Déplace les images validées vers leur dossier définitif et met à jour la base de données postgre.",
+    )
+
     # ------------------ MLflow TRAINING ------------------
     train_model = TriggerDagRunOperator(
         task_id="Entrainement_du_modele",
@@ -43,4 +51,4 @@ with DAG(
         wait_for_completion=False 
     )
     # ------------------ ORDRE DES TÂCHES ------------------
-    check_image >> train_model
+    check_image >> update_database >> train_model

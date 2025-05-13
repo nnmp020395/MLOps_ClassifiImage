@@ -8,14 +8,21 @@ Ce module contient les fonctions nécessaires pour :
 
 import logging
 import os
-import subprocess
 
 import boto3
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import BranchPythonOperator, PythonOperator
 from io import BytesIO
+from sqlalchemy import create_engine, text
+from utils.store_images import update_postgresql_with_s3_urls
 
-# ------------------ CONFIGURATION ------------------
+
+
+# ------------------ Configuration PostgreSQL ------------------
+sql_alchemy_conn = "postgresql+psycopg2://airflow:airflow@postgres/airflow"
+engine = create_engine(sql_alchemy_conn)
+
+# ------------------ CONFIGURATION MINIO ------------------
 BUCKET = "image-dandelion-grass"
 PREFIX_RAW = "raw/new_data/corrected_data/"
 MINIO_CLIENT = boto3.client(
@@ -27,7 +34,7 @@ MINIO_CLIENT = boto3.client(
     use_ssl=False,
 )
 
-
+# ------------------ FONCTIONS ------------------
 def check_minio_image_count() -> bool:
     """
     Vérifie si au moins 10 images sont présentes dans le bucket MinIO.
@@ -52,49 +59,53 @@ def check_minio_image_count() -> bool:
         return False
 
 
-def update_database():
+def update_database_and_store_metadata():
     """
-    Déplace les images validées depuis 'raw/new_data/corrected_data/' vers
-    'raw/dandelion/' ou 'raw/grass/', selon leur nom.
-    Le suffixe de classe (_dandelion ou _grass) est retiré du nom de fichier.
+    Déplace les images validées vers leur dossier définitif (raw/dandelion ou raw/grass),
+    les renomme, puis enregistre leur chemin dans PostgreSQL.
     """
-    logging.info("Mise à jour de la base de données MinIO avec les images validées.")
-    
     try:
         response = MINIO_CLIENT.list_objects_v2(Bucket=BUCKET, Prefix=PREFIX_RAW)
         objects = response.get("Contents", [])
-        image_keys = [obj["Key"] for obj in objects if obj["Key"].endswith((".jpg", ".jpeg", ".png"))]
+        image_keys = [obj["Key"] for obj in objects if obj["Key"].lower().endswith((".jpg", ".jpeg", ".png"))]
+
+        new_images_to_store = []
 
         for key in image_keys:
             filename = os.path.basename(key)
 
-            # Receuil de la classe à partir du nom
+            # Identifie le label et le retire du nom de l'image
             if "_dandelion" in filename:
-                class_label = "dandelion"
+                label = "dandelion"
             elif "_grass" in filename:
-                class_label = "grass"
+                label = "grass"
             else:
-                logging.warning(f"Nom de fichier non conforme, ignoré : {filename}")
+                logging.warning(f"Fichier ignoré (classe inconnue) : {filename}")
                 continue
 
-            # Nettoie le nom de fichier
-            cleaned_filename = filename.replace(f"_{class_label}", "")
-            new_key = f"raw/{class_label}/{cleaned_filename}"
+            cleaned_filename = filename.replace(f"_{label}", "")
+            dest_key = f"raw/{label}/{cleaned_filename}"
 
-            # On télécharge
+            # Télécharge
             buffer = BytesIO()
             MINIO_CLIENT.download_fileobj(BUCKET, key, buffer)
             buffer.seek(0)
 
-            # On dépose
-            MINIO_CLIENT.upload_fileobj(buffer, BUCKET, new_key)
-            logging.info(f"Image déplacée : {key} → {new_key}")
+            # Dépose
+            MINIO_CLIENT.upload_fileobj(buffer, BUCKET, dest_key)
+            logging.info(f"Image déplacée : {key} → {dest_key}")
 
-            # On supprime l'original
+            # Supprime l'ancienne image
             MINIO_CLIENT.delete_object(Bucket=BUCKET, Key=key)
 
-        logging.info("Mise à jour de minio terminée.")
+            # Build URL MinIO accessible
+            s3_url = f"{os.getenv('MINIO_ENDPOINT', 'http://minio:9000')}/{BUCKET}/{dest_key}"
+            new_images_to_store.append((cleaned_filename, label, s3_url))
+
+        # Enregistrement dans PostgreSQL
+        if new_images_to_store:
+            update_postgresql_with_s3_urls(new_images_to_store)
 
     except Exception as e:
-        logging.error(f"Erreur lors de la mise à jour de la base de données : {e}")
+        logging.error(f"Erreur durant le traitement des images : {e}")
         raise
