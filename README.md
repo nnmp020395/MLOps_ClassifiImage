@@ -3,6 +3,7 @@
 This project was realized for the MLOps course of the specialized Master’s AI Data expert & MLops. The objective is to develop a complete machine learning pipeline for image classification. It handles a binary classification task on an image dataset containing labeled “dandelion” and “grass” images.
 A development environment was set for development and tests and a production environment allows the deployment on a Kubernetes cluster.
 
+
 ## 1. Global project architecture
 
 ![Global scheme](./images/global_scheme.png)
@@ -12,25 +13,84 @@ Airflow orchestrates the pipeline for the download and storage of the database, 
 
 ## 2. Quick setup
 
-## Dev environement
+### Dev environement
 
-### Run Docker
+* Run Docker
+
+
 For the 1st time
 ```bash
-docker compose up -d -build
+docker compose up -d --build
 ```
 otherwise
 ```bash
 docker compose up
 ```
-### Run webapp
-After running the docker compose, click on `streamlit` image to run the webapp brownser.
+
+All custom docker images for the project are also available at : https://hub.docker.com/r/dessalinesdarryl/mlops_classifimage/ 
+
+Official images from grafana (grafana/grafana:latest), postgres (postgres:13) and prometheus (prom/prometheus:latest) are also used in the docker-compose.yaml file.
+
+* First training
+
+Go to the url http://localhost:8080 to access the airflow webserver and trigger the **mlops_project_get_store_images** dag. This will download the images for the database and store them then trigger a 1st training of the model. 
+In development mode, airflow webserver default password and user name are set to airflow. 
 
 
-## Prod environement
+* Run the webapp
+
+After running the docker compose, go to http://localhost:8501 to access the webapp.
+You can then upload in image to get a prediction. 
+
+### Prod environement
 
 ## 3. Dataset
+The dataset used in this project consists of RGB images labeled as either "dandelion" or "grass", intended for binary image classification, available at https://github.com/btphan95/greenr-airflow/tree/master/dat.
 
+The training and validation sets are manually curated and stored in MinIO.
+Images can be added dynamically through the Streamlit interface, and manually validated by an admin before being used for retraining.
+Images are collected from public datasets and user uploads. All data is centralized in an S3-compatible MinIO bucket, ensuring scalability, high availability, and seamless integration with the MLOps pipeline.
+
+## 4. Storage
+
+### in PostgreSQL
+A PostgreSQL database keeps track of all the processed images. The **plants_data** table includes the following fields:
+
+| Column Name | Description                       |
+| ----------- | --------------------------------- |
+| id          | Unique identifier (auto)          |
+| url\_source | Original name or source URL       |
+| label       | Image class (`dandelion`/`grass`) |
+| url\_s3     | Full MinIO path to the image      |
+
+### in Minio Bucket: ```image-dandelion-grass```
+
+MinIO is used as the central object store for both training/inference images and serialized model weights. It provides a lightweight, self-hosted, and S3-compatible storage solution integrated into the entire MLOps workflow.
+
+The project stores data inside the image-dandelion-grass bucket, following the structure below:
+
+``` bash
+image-dandelion-grass/
+├── model/
+│   ├── YYYY-MM-DD/               # Folder per training date
+│   │   ├── dinov2_classifier_0.pth
+│   │   ├── dinov2_classifier_1.pth
+│   │   └── ...                   # Multiple versions for each training session
+├── raw/
+│   ├── dandelion/                # Manually validated images labeled "dandelion"
+│   ├── grass/                    # Manually validated images labeled "grass"
+│   └── new_data/
+│       ├── pending_validation/   # User-submitted images awaiting admin validation
+│       └── corrected_data/       # Admin-labeled and approved images 
+```
+
+A DAG in Airflow periodically checks for new validated images in corrected_data/. When 10 or more new images are available, they are:
+
+1. Moved to their appropriate class folders (raw/dandelion/ or raw/grass/),
+2. Registered in a PostgreSQL database, which stores metadata including the file name, label, and full MinIO URL,
+3. Used to automatically retrain the classification model.
+
+![Retrain model](./images/retrain_model_schema.png)
 ## 4. Storage
 
 - Production environment
@@ -44,7 +104,16 @@ Structure of minio-chart to deploy on Kubernetes with Helm:
         └──minio-deployment.yaml
         └──minio-service.yaml
 ```
-## 5. Model architecture
+
+Command line for running the `minio` release with the official template Bitnami
+
+```bash
+helm install minio bitnami/minio \
+  --set rootUser=minioadmin \
+  --set rootPassword=minioadmin
+```
+
+## 5. Model training
 
 Our goal is to build a binary image classification model that distinguishes between images of **dandelion** and **grass**. \
 The input to the model is a single RGB image, resize to 224x224 pixels and the output is a binary prediction : either class 0 (dandelion) or class 1 (grass).
@@ -52,9 +121,94 @@ The input to the model is a single RGB image, resize to 224x224 pixels and the o
 ### Architecture overview
 We use the DINOv2 vision transformer model as a feature extractor. DINOv2 is a self-supervised vision transformer retrained on large-scale image datasets. Specifically, we use the ViT-S/14 variant of DINOv2 without fine-tuning its internal weights. Instead of, we extract a feature embedding from the [CLS] token of the last transformer layer. The DINOv2 output is passed through a simple classification head. We freeze the DINOv2 backbone and train only the classification head. The model is trained using binary cross-entropy loss, optimized with Adam at learning rate of 0.003.
 
-The model achieves more **90%** accuracy on the test set and shows good generalization on both sunny and shaded outdoor scenes.
 
-## 6. Automated pipeline
+The model achieves more than **90%** accuracy on the test set and shows good generalization on both sunny and shaded outdoor scenes.
+
+Structure of the folders for model training and monitoring with Mlflow:
+
+```bash
+├── ../MlOpsClassifiImage       # Implementation of classifier with MlOps pipeline
+    └── mlflow # main folder for the creation of the mlflow module
+    │   └──Dockerfile.mlflow # docker file for the mlflow module
+    │   └──requirements.txt # requirements for the mlflow module
+    │
+    └── src # main folder for model creation, training and monitoring functions
+        └──mlflow_tracking.py   # training and monitoring with mlflow
+        └──model.py             # model architecture definition and loading from .pth
+```
+
+### Training monitoring with Mlflow
+
+Mlflow is used for the monitoring of the training. It is accessible at the url: http://localhost:5001
+
+The page is designed to allow monotoring of different training experiments, and displays the evolution of train accuracy and train loss for each experiment, along with the validation accuracy value. 
+
+![Mlflow page](./images/main_mlflow.png)
+
+
+<div style="display: flex; justify-content: space-between;">
+  <img src="./images/train_loss.jpeg" alt="Train loss" width="49%" />
+  <img src="./images/val_acc.jpeg" alt="Validation accuracy" width="49%" />
+</div>
+
+
+Acess to a specific run gives detailed information regarding the date of the run, duration, status, training parameters and metrics, as depicted below. 
+
+<div style="display: flex; justify-content: center;">
+  <img src="./images/mlflow_kpi.png" alt="Mlflow kpi" width="800" />
+</div>
+
+
+## 6. Automated pipeline with Airflow
+
+- Dev environment : 
+
+Airflow webserver is accessible at the url: http://localhost:8080
+
+![All dags](./images/all_dags.png)
+
+Three dependent dags are set to download the database, train the model, and trigger training if there are more than 10 new images in the database. 
+
+<div style="display: flex; justify-content: center;">
+  <img src="./images/dag_dependencies.png" alt="Dag dependencies" width="600" />
+</div>
+
+
+The first dag is useful at the beginning to download the images to Minio and create the SQL database to store the urls and labels of the images. 
+
+
+![Dag1](./images/dag1.png)
+
+The last task triggers the training of the model with the downloaded images (2nd dag below). 
+
+![Dag1](./images/dag_train.png)
+
+
+Once per week, the 3rd dag (below) is triggered and  heck if there are more than 10 new images in the database. If there are less than 10, it skips the 2 last tasks, other wise it moves the new images in the training folder and triggers the training dag. 
+
+![Dag2](./images/dag2.png)
+
+
+- Production environment
+
+Structure of airflow-chart to deploy on Kubernetes with Helm:
+```bash
+└── airflow-chart # Top-level folder for charts
+    └──Chart.yaml #
+    └──values.yaml #
+    └──templates  #
+        └──airflow-init-deployment.yaml
+        └──airflow-scheduler-deployment.yaml
+        └──airflow-triggerer-deployment.yaml
+        └──airflow-webserver-deployment.yaml
+        └──airflow-init-cm0-configmap.yaml
+```
+Command line for running the `airflow` release
+
+```bash
+helm install myrelease apache-airflow/airflow -f values.yaml \
+    --namespace airflow --create-namespace
+```
 
 ## 7. Inference on the model
 
@@ -91,11 +245,8 @@ Structure of fastapi-chart to deploy on Kubernetes with Helm:
     └──Chart.yaml #
     └──values.yaml #
     └──templates  #
-        └──airflow-init-deployment.yaml
-        └──airflow-scheduler-deployment.yaml
-        └──airflow-triggerer-deployment.yaml
-        └──airflow-webserver-deployment.yaml
-        └──airflow-init-cm0-configmap.yaml
+        └──deployment.yaml
+        └──service.yaml
 ```
 
 ### Via Streamlit
@@ -108,7 +259,7 @@ Structure of the /streamlit folder:
 └── streamlit                  # Top-level folder for interaction via Streamlit
     ├── webapp              # setup for the streamlit interface
     │   └──app_streamlit.py   # main script for the interaction via Streamlit
-    │
+    │            
     └── Dockerfile.streamlit  # Dockerfile for the streamlit module
     └── requirements.txt      # requirements for the streamlit module
 ```
@@ -117,7 +268,13 @@ Structure of the /streamlit folder:
 
 The Streamlit app is accessible at the url : http://localhost:8501. A prediction can be obtained by directly drag and dropping an image or uploading from your local machine.
 
-### TODO last version of screenshot streamlit
+
+![Streamlit page 1](./images/streamlit_page1.png)
+
+A second page, accessible with a password, allows an admin to check the label attributed to submitted images, correct it if necessary, and store the correctly labeled image in the minio database. These new images are then use for retraining the model.
+
+![Streamlit page 2](./images/streamlit_page2.png)
+
 ### TODO prod env
 
 
@@ -165,4 +322,18 @@ The Streamlit monitoring dashboard is set up to display page views and total pre
 
 ![Streamlit monitoring](./images/streamlit_monitoring.png)
 
+
 ## 4. Conclusion and next steps
+
+set up a vector database (ex : xxx)
+
+add threshold to push model on minio
+
+Whereas the dandelion/grass classification task is quite easy, we could also try harder tasks such as rocket salad / dandelion leaves classification : 
+
+<div style="display: flex; justify-content: space-between;">
+  <img src="./images/roquette.jpeg" alt="Roquette" width="40%" />
+  <img src="./images/pissenlit.jpeg" alt="Pissenlit" width="40%" />
+</div>
+
+

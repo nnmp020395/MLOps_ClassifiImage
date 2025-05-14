@@ -74,6 +74,7 @@ def load_model(model_path="dinov2_classifier.pth"):
                 key=minio_key,
                 secret=minio_secret,
                 client_kwargs={"endpoint_url": "http://minio:9000"},
+
             )
             with fs.open(model_path, "rb") as f:
                 buffer = io.BytesIO(f.read())

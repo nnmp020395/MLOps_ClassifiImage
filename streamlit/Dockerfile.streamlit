@@ -2,11 +2,16 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
+# Dépendances Python
+COPY streamlit/requirements.txt .
 #RUN pip install --upgrade pip && pip install -r requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
-COPY webapp/ .
+# Code source
+COPY streamlit/webapp/ ./webapp
+COPY ../src ./src
+COPY ../airflow ./airflow
 
 EXPOSE 8501
-CMD ["streamlit", "run", "app_streamlit.py", "--server.port=8501", "--server.address=0.0.0.0"]
+
+CMD ["streamlit", "run", "webapp/app_streamlit.py", "--server.port=8501", "--server.address=0.0.0.0"]

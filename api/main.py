@@ -5,12 +5,12 @@ import sys
 import time
 from datetime import datetime, timedelta
 from uuid import uuid4
-
+import asyncio
 import boto3
 import torch
 import torchvision.transforms as transforms
 from botocore.config import Config
-from fastapi import FastAPI, File, Request, Response, UploadFile
+from fastapi import FastAPI, File, Request, Response, UploadFile, Form
 from fastapi.responses import JSONResponse
 from PIL import Image
 from prometheus_client import (CONTENT_TYPE_LATEST, Counter, Histogram,
@@ -56,7 +56,6 @@ s3_client = boto3.client(
     use_ssl=False,
     config=boto_config,
 )
-
 
 # ------------------ Modèle ------------------
 def find_latest_model_for_date(date_obj):
@@ -126,7 +125,6 @@ async def metrics_middleware(request: Request, call_next):
 def home():
     return {"message": "Bienvenue sur l'API de prédiction DINOv2."}
 
-
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     try:
@@ -137,29 +135,30 @@ async def predict(file: UploadFile = File(...)):
         with torch.no_grad():
             prediction = model(img_tensor).argmax(1).item()
             class_label = class_names[prediction]
-            return {"prediction": class_label}
-
-        # ---- Détection de doublon ----
-        embedding = get_embedding(contents)
-        if is_duplicate(embedding, s3_client=s3_client, bucket_name=bucket_name):
-            return {
-                "status": "known",
-                "message": "Image connue, pas de réentraînement.",
-            }
-        else:
-            buffer = io.BytesIO(contents)
-            filename = f"{uuid4().hex}_{class_label}.jpg"
-            s3_key = f"raw/new_data/pending_validation/{filename}"
-            s3_client.upload_fileobj(buffer, bucket_name, s3_key)
-            logger.info(f"Nouvelle image téléversée : {s3_key}")
-
-            return {
-                "status": "new",
-                "message": "Image ajoutée à l’index local et téléversée dans MinIO.",
-            }
+        return {"prediction": class_label}
 
     except Exception as e:
-        logger.error(f"Erreur traitement image : {e}")
+        logger.error(f"Erreur prédiction : {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.post("/check_duplicate")
+async def check_duplicate(file: UploadFile = File(...), label: str = Form(...)):
+    try:
+        contents = await file.read()
+        embedding = get_embedding(contents)
+
+        if is_duplicate(embedding, s3_client, bucket_name):
+            return {"status": "known", "message": "Image connue, pas de réentraînement."}
+        else:
+            buffer = io.BytesIO(contents)
+            filename = f"{uuid4().hex}_{label}.jpg"
+            s3_key = f"raw/new_data/pending_validation/{filename}"
+            s3_client.upload_fileobj(buffer, bucket_name, s3_key)
+            logger.info(f"Image téléversée : {s3_key}")
+            return {"status": "new", "message": "Image ajoutée et téléversée dans MinIO."}
+
+    except Exception as e:
+        logger.error(f"Erreur doublon : {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 

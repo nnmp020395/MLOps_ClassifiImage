@@ -14,19 +14,24 @@ import os
 import random
 import socket
 import time
+from datetime import datetime
 
-import mlflow
-import mlflow.pytorch
+import boto3
+# import matplotlib.pyplot as plt
+# import mlflow.pytorch
 import s3fs
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 from mlflow.tracking import MlflowClient
 from PIL import Image
+# from sklearn.metrics import auc, roc_curve
 from torch import optim
 from torch.utils.data import DataLoader, Dataset
-import matplotlib.pyplot as plt
-from sklearn.metrics import roc_curve, auc
+
+import mlflow
+
+os.environ["MLFLOW_S3_ENDPOINT_URL"] = os.getenv("MINIO_ENDPOINT", "http://minio:9000")
 
 
 # ------------------ LOGGING ------------------
@@ -85,7 +90,9 @@ def split_samples(s3_root, classes, split_ratio=0.7):
     fs = s3fs.S3FileSystem(
         key=os.getenv("AWS_ACCESS_KEY_ID"),
         secret=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        client_kwargs={"endpoint_url": os.getenv("MINIO_ENDPOINT", "http://minio:9000")}
+        client_kwargs={
+            "endpoint_url": os.getenv("MINIO_ENDPOINT", "http://minio:9000")
+        },
     )
     train_samples, val_samples = [], []
     class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
@@ -125,7 +132,9 @@ class S3ImageFolder(Dataset):
         self.s3 = s3fs.S3FileSystem(
             key=os.getenv("AWS_ACCESS_KEY_ID"),
             secret=os.getenv("AWS_SECRET_ACCESS_KEY"),
-            client_kwargs={"endpoint_url": os.getenv("MINIO_ENDPOINT", "http://minio:9000")}
+            client_kwargs={
+                "endpoint_url": os.getenv("MINIO_ENDPOINT", "http://minio:9000")
+            },
         )
         self.samples = samples
         self.transform = transform
@@ -283,20 +292,40 @@ with mlflow.start_run(run_name=run_name):
     # logging.info("Courbe ROC as an ")
 
     # ------------------ SAVE MODEL ------------------
-    mlflow.pytorch.log_model(model, artifact_path="model")
-
-    fs = s3fs.S3FileSystem(
-        key=os.getenv("AWS_ACCESS_KEY_ID"),
-        secret=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        client_kwargs={"endpoint_url": os.getenv("MINIO_ENDPOINT", "http://minio:9000")}
+    s3_client = boto3.client(
+        "s3",
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", "minioadmin"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", "minioadmin"),
+        endpoint_url=os.getenv("MINIO_ENDPOINT", "http://minio:9000"),
     )
-    with fs.open("s3://image-dandelion-grass/model/dinov2_classifier.pth", "wb") as f:
-        torch.save(model.state_dict(), f)
 
-    logging.info(
-        "Modèle loggé avec MLflow et sauvegardé dans le bucket S3 sous \
-            'model/dinov2_classifier.pth'."
-    )
+    bucket_name = "image-dandelion-grass"
+
+    # Date du jour
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    prefix = f"model/{date_str}/"
+    i = 0
+
+    # Liste des objets existants dans le dossier du jour
+    response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+    existing_keys = [obj["Key"] for obj in response.get("Contents", [])]
+
+    # Trouve le prochain nom de fichier disponible
+    while f"{prefix}dinov2_classifier_{i}.pth" in existing_keys:
+        i += 1
+
+    object_key = f"{prefix}dinov2_classifier_{i}.pth"
+
+    # Sauvegarde locale temporaire
+    local_model_path = "/tmp/dinov2_classifier.pth"
+    torch.save(model.state_dict(), local_model_path)
+
+    # Upload vers S3/MinIO
+    s3_client.upload_file(local_model_path, bucket_name, object_key)
+
+    os.remove(local_model_path)
+
+    logging.info(f"Modèle sauvegardé sur MinIO à s3://{bucket_name}/{object_key}")
 
     # ------------------ DURATION ------------------
     duration = time.time() - start_time

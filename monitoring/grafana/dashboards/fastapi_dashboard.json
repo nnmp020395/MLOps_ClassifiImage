@@ -8,41 +8,68 @@
     "refresh": "5s",
     "panels": [
       {
-        "type": "graph",
-        "title": "Total Request Count",
+        "type": "stat",
+        "title": "Total POST Request Count",
         "id": 1,
         "datasource": "Prometheus",
         "targets": [
           {
-            "expr": "request_count",
-            "legendFormat": "{{method}} {{endpoint}}",
-            "interval": ""
+            "expr": "request_count_total{method=\"POST\"}",
+            "legendFormat": "Total POST requests count"
           }
         ],
-        "lines": true,
-        "linewidth": 2,
-        "xaxis": {
-          "show": true
-        },
-        "yaxes": [
-          {
-            "format": "short",
-            "show": true
+        "fieldConfig": {
+          "defaults": {
+            "unit": "none",
+            "color": {
+              "mode": "palette-classic"
+            }
           },
-          {
-            "show": true
-          }
-        ]
+          "overrides": []
+        },
+        "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      }
       },
       {
-        "type": "graph",
-        "title": "Request Latency (seconds)",
+        "type": "stat",
+        "title": "Total GET Request Count",
         "id": 2,
         "datasource": "Prometheus",
         "targets": [
           {
+            "expr": "request_count_total{method=\"GET\"}",
+            "legendFormat": "Total GET requests count"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "none",
+            "color": {
+              "mode": "palette-classic"
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 0,
+        "y": 5
+      }
+      },
+      {
+        "type": "graph",
+        "title": "Request Latency (seconds)",
+        "id": 3,
+        "datasource": "Prometheus",
+        "targets": [
+          {
             "expr": "rate(request_latency_seconds_sum[1m]) / rate(request_latency_seconds_count[1m])",
-            "legendFormat": "{{endpoint}}",
+            "legendFormat": "{{method}} {{endpoint}}",
             "interval": ""
           }
         ],
@@ -59,16 +86,22 @@
           {
             "show": true
           }
-        ]
+        ],
+        "gridPos": {
+          "h": 7,
+          "w": 15,
+          "x": 6,
+          "y": 0
+        }
       },
       {
         "type": "graph",
         "title": "Requests per Second",
-        "id": 3,
+        "id": 4,
         "datasource": "Prometheus",
         "targets": [
           {
-            "expr": "rate(request_count[1m])",
+            "expr": "rate(request_count_total[1m])",
             "legendFormat": "{{method}} {{endpoint}}",
             "interval": ""
           }
@@ -86,7 +119,13 @@
           {
             "show": true
           }
-        ]
+        ],
+        "gridPos": {
+          "h": 7,
+          "w": 15,
+          "x": 6,
+          "y": 5
+        }
       }
     ]
   }
