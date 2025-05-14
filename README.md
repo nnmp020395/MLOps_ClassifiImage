@@ -321,7 +321,89 @@ The Streamlit monitoring dashboard is set up to display page views and total pre
 
 ![Streamlit monitoring](./images/streamlit_monitoring.png)
 
-## 4. Conclusion and next steps
+## 9. Production environment
+
+Production deployment involves deploying these services to a local Kubernetes cluster via Helm Chart. For stable, reusable, and versioned production, Helm is preferred over the `kubectl apply` approach. YAML files are developed using official charts compatible with different applications.
+
+We chose the Docker-desktop cluster, which is provided by Docker Desktop and allows us to deploy directly without the need to define a virtual machine or other installations.
+
+### Installation Helm et les charts
+
+Install Helm following the guide https://helm.sh/fr/docs/intro/install/
+
+To get started, we first install the official chart repositories for Airflow, Minio, FastAPI, and MLFlow.
+```bash
+helm repo add apache-airflow https://airflow.apache.org/
+helm repo add bitnami https://charts.bitnami.com/bitnami # Bitnami is compatible with Minio, MLFlow, Grafana & Prometheus
+helm repo add fastapi-helm-chart https://anqorithm.github.io/fastapi-helm-chart/charts
+helm repo add svtech https://svtechnmaa.github.io/charts/artifacthub/
+helm update repo # to verify all installations above
+```
+
+Into `charts`, for each application, Helm will expect a directory structure that matches this:
+
+```bash
+└── app-chart
+    └──Chart.yaml               # A YAML file containing information about the chart
+    └──values.yaml              # The default configuration values for this chart
+    └──templates                # sub-folder that contains deployment.yaml & service.yaml
+        └──deployment.yaml      #
+        └──service.yaml         #
+```
+
+sauf Airflow, son directory est différent:
+```bash
+└── airflow-chart
+    └──Chart.yaml
+    └──values.yaml
+    └──templates
+        └──airflow-init-deployment.yaml
+        └──airflow-scheduler-deployment.yaml
+        └──airflow-triggerer-deployment.yaml
+        └──airflow-webserver-deployment.yaml
+        └──airflow-init-cm0-configmap.yaml
+```
+
+### Deployment
+
+Move into each app-chart and follow these steps below to deploy each application separately on cluster. We need deploy in order : Minio, Airflow & Postgres, FastApi, MLFlow, Grafana & Prometheus.
+
+Firstly, verify the cluster context:
+
+```bash
+kubectl config current-context
+```
+
+**Minio** : move into `minio-chart`, follow these commands lines
+
+```bash
+cd charts/minio-chart
+helm install minio bitnami/minio \
+  --set rootUser=minioadmin \
+  --set rootPassword=minioadmin
+```
+Run `kubectl port-forward --namespace default svc/minio 9001:9001` to open `localhost:9001`.
+
+
+**Airflow** : use docker file `./airflow/Dockerfile.custom` and build an image that guides the chart find all DAGs:
+
+```bash
+cd airflow
+docker build \
+  -t mlops_classifiimage-airflow-custom:latest \
+  -f Dockerfile.custom .
+docker tag mlops_classifiimage-airflow-custom \
+  nnmp020395/mlops_classifiimage-airflow-custom:latest
+docker push nnmp020395/mlops_classifiimage-airflow-custom:latest
+```
+
+Then, move in the `airflow-chart`
+```bash
+cd charts/airflow-chart
+helm install myrelease apache-airflow/airflow -f values.yaml --namespace airflow --create-namespace
+```
+
+## 10. Conclusion and next steps
 
 set up a vector database (ex : xxx)
 
