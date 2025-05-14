@@ -2,7 +2,7 @@ name: CI with Docker Compose
 
 on:
   push:
-    branches: [ unittest ]
+    branches: [ unittest, main ]
   pull_request:
     branches: [ '*' ]
 
