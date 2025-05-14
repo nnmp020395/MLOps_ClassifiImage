@@ -1,0 +1,23 @@
+replicaCount: 1
+
+images:
+  airflow:
+    repository: nnmp020395/mlops_classifiimage-airflow-custom
+    tag: latest
+    pullPolicy: IfNotPresent
+
+postgres:
+  conn: postgresql+psycopg2://airflow:airflow@postgres/airflow
+
+airflow:
+  executor: LocalExecutor
+  loadExamples: "false"
+  databaseUrl: postgresql+psycopg2://airflow:airflow@postgres/airflow
+  webUser: airflow
+  webPassword: airflow
+
+minio:
+  accessKey: minioadmin
+  secretKey: minioadmin
+  endpoint: http://minio.default.svc.cluster.local:9000
+  bucket: image-dandelion-grass

@@ -1,0 +1,24 @@
+env:
+- name: AWS_ACCESS_KEY_ID
+  value: minioadmin
+- name: AWS_SECRET_ACCESS_KEY
+  value: minioadmin
+
+image:
+  pullPolicy: IfNotPresent
+  repository: nnmp020395/mlops_classifiimage-airflow-custom
+  tag: v2
+resources: {}
+
+minio:
+  endpoint: http://minio.default.svc.cluster.local:9000
+  accessKey: minioadmin
+  secretKey: minioadmin
+  bucket: image-dandelion-grass
+
+service:
+  nodePort: 30800
+  port: 8000
+  type: NodePort
+volumeMounts: []
+volumes: []
