@@ -29,10 +29,16 @@ All custom docker images for the project are also available at : https://hub.doc
 
 Official images from grafana (grafana/grafana:latest), postgres (postgres:13) and prometheus (prom/prometheus:latest) are also used in the docker-compose.yaml file.
 
+* First training
+
+Go to the url http://localhost:8080 to access the airflow webserver and trigger the **mlops_project_get_store_images** dag. This will download the images for the database and store them then trigger a 1st training of the model. 
+In development mode, airflow webserver default password and user name are set to airflow. 
+
+
 * Run the webapp
 
 After running the docker compose, go to http://localhost:8501 to access the webapp.
-
+You can then upload in image to get a prediction. 
 
 ### Prod environement
 
@@ -150,7 +156,38 @@ Acess to a specific run gives detailed information regarding the date of the run
 </div>
 
 
-## 6. Automated pipeline
+## 6. Automated pipeline with Airflow
+
+- Dev environment : 
+
+Airflow webserver is accessible at the url: http://localhost:8080
+
+![All dags](./images/all_dags.png)
+
+Three dependent dags are set to download the database, train the model, and trigger training if there are more than 10 new images in the database. 
+
+<div style="display: flex; justify-content: center;">
+  <img src="./images/dag_dependencies.png" alt="Dag dependencies" width="600" />
+</div>
+
+
+The first dag is useful at the beginning to download the images to Minio and create the SQL database to store the urls and labels of the images. 
+
+
+![Dag1](./images/dag1.png)
+
+The last task triggers the training of the model with the downloaded images (2nd dag below). 
+
+![Dag1](./images/dag_train.png)
+
+
+Once per week, the 3rd dag (below) is triggered and  heck if there are more than 10 new images in the database. If there are less than 10, it skips the 2 last tasks, other wise it moves the new images in the training folder and triggers the training dag. 
+
+![Dag2](./images/dag2.png)
+
+
+
+
 - Production environment
 
 Structure of airflow-chart to deploy on Kubernetes with Helm:
@@ -287,3 +324,14 @@ The Streamlit monitoring dashboard is set up to display page views and total pre
 ## 4. Conclusion and next steps
 
 set up a vector database (ex : xxx)
+
+add threshold to push model on minio
+
+Whereas the dandelion/grass classification task is quite easy, we could also try harder tasks such as rocket salad / dandelion leaves classification : 
+
+<div style="display: flex; justify-content: space-between;">
+  <img src="./images/roquette.jpeg" alt="Roquette" width="40%" />
+  <img src="./images/pissenlit.jpeg" alt="Pissenlit" width="40%" />
+</div>
+
+
