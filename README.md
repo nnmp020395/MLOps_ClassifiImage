@@ -113,19 +113,41 @@ The input to the model is a single RGB image, resize to 224x224 pixels and the o
 ### Architecture overview
 We use the DINOv2 vision transformer model as a feature extractor. DINOv2 is a self-supervised vision transformer retrained on large-scale image datasets. Specifically, we use the ViT-S/14 variant of DINOv2 without fine-tuning its internal weights. Instead of, we extract a feature embedding from the [CLS] token of the last transformer layer. The DINOv2 output is passed through a simple classification head. We freeze the DINOv2 backbone and train only the classification head. The model is trained using binary cross-entropy loss, optimized with Adam at learning rate of 0.003.
 
-The model achieves more **90%** accuracy on the test set and shows good generalization on both sunny and shaded outdoor scenes.
+The model achieves more than **90%** accuracy on the test set and shows good generalization on both sunny and shaded outdoor scenes.
+
+Structure of the folders for model training and monitoring with Mlflow:
+
+```bash
+├── ../MlOpsClassifiImage       # Implementation of classifier with MlOps pipeline
+    └── mlflow # main folder for the creation of the mlflow module
+    │   └──Dockerfile.mlflow # docker file for the mlflow module
+    │   └──requirements.txt # requirements for the mlflow module
+    │
+    └── src # main folder for model creation, training and monitoring functions
+        └──mlflow_tracking.py   # training and monitoring with mlflow
+        └──model.py             # model architecture definition and loading from .pth
+```
 
 ### Training monitoring with Mlflow
 
-TODO ajouter images + expliquer
+Mlflow is used for the monitoring of the training. It is accessible at the url: http://localhost:5001
+
+The page is designed to allow monotoring of different training experiments, and displays the evolution of train accuracy and train loss for each experiment, along with the validation accuracy value. 
 
 ![Mlflow page](./images/main_mlflow.png)
 
-![Mlflow train loss](./images/train_loss.jpeg)
 
-![Mlflow val acc](./images/val_acc.jpeg)
+<div style="display: flex; justify-content: space-between;">
+  <img src="./images/train_loss.jpeg" alt="Train loss" width="49%" />
+  <img src="./images/val_acc.jpeg" alt="Validation accuracy" width="49%" />
+</div>
 
-![Mlflow kpi](./images/mlflow_kpi.png)
+
+Acess to a specific run gives detailed information regarding the date of the run, duration, status, training parameters and metrics, as depicted below. 
+
+<div style="display: flex; justify-content: center;">
+  <img src="./images/mlflow_kpi.png" alt="Mlflow kpi" width="800" />
+</div>
 
 
 ## 6. Automated pipeline
@@ -153,6 +175,7 @@ helm install myrelease apache-airflow/airflow -f values.yaml \
 ## 7. Inference on the model
 
 There are two ways for the user to interact with the model in inference mode.
+
 
 ### Via the API
 
