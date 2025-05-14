@@ -25,7 +25,9 @@ otherwise
 docker compose up
 ```
 
-All docker images for the project are also available at : https://hub.docker.com/repository/docker/indirafa/mlops_classifimage/. 
+All custom docker images for the project are also available at : https://hub.docker.com/r/dessalinesdarryl/mlops_classifimage/ 
+
+Official images from grafana (grafana/grafana:latest), postgres (postgres:13) and prometheus (prom/prometheus:latest) are also used in the docker-compose.yaml file.
 
 * Run the webapp
 
@@ -115,7 +117,16 @@ The model achieves more **90%** accuracy on the test set and shows good generali
 
 ### Training monitoring with Mlflow
 
-ajouter images + expliquer
+TODO ajouter images + expliquer
+
+![Mlflow page](./images/main_mlflow.png)
+
+![Mlflow train loss](./images/train_loss.jpeg)
+
+![Mlflow val acc](./images/val_acc.jpeg)
+
+![Mlflow kpi](./images/mlflow_kpi.png)
+
 
 ## 6. Automated pipeline
 - Production environment
