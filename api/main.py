@@ -6,7 +6,6 @@ import time
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-import asyncio
 import boto3
 import torch
 import torchvision.transforms as transforms
@@ -29,7 +28,7 @@ AIRFLOW_UTILS_DIR = os.path.join(CURRENT_DIR, "../airflow/dags/utils")
 sys.path.insert(0, SRC_DIR)
 sys.path.insert(0, AIRFLOW_UTILS_DIR)
 
-from duplicate_detector import add_image_to_index, get_embedding, is_duplicate
+from duplicate_detector import get_embedding, is_duplicate
 
 # ------------------ Logging ------------------
 os.makedirs("logs", exist_ok=True)
