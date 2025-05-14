@@ -80,7 +80,7 @@ A DAG in Airflow periodically checks for new validated images in corrected_data/
 2. Registered in a PostgreSQL database, which stores metadata including the file name, label, and full MinIO URL,
 3. Used to automatically retrain the classification model.
 
-![Retrain model](./images/retrain_model_scheme.png)
+![Retrain model](./images/retrain_model_schema.png)
 ## 4. Storage
 
 - Production environment
