@@ -12,7 +12,8 @@ from datetime import datetime, timedelta
 
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
-from sqlalchemy import create_engine  # , text
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+from sqlalchemy import create_engine
 from utils.create_table_from_url import url_to_sql
 from utils.store_images import process_images
 
@@ -70,5 +71,13 @@ with DAG(
         dag=dag,
     )
 
+    first_training = TriggerDagRunOperator(
+        task_id="Premier_entrainement_du_modele",
+        trigger_dag_id="dinov2_train_pipeline",
+        conf={},  
+        wait_for_completion=False 
+    )
+
+
     # ------------------ ORDRE DES TÂCHES ------------------
-    start_task >> insert_urls_task >> process_images_task
+    start_task >> insert_urls_task >> process_images_task >> first_training
