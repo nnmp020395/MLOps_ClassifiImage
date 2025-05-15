@@ -14,7 +14,6 @@ from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import BranchPythonOperator, PythonOperator
 from io import BytesIO
 from sqlalchemy import create_engine, text
-from utils.store_images import update_postgresql_with_s3_urls
 
 
 
@@ -104,7 +103,34 @@ def update_database_and_store_metadata():
 
         # Enregistrement dans PostgreSQL
         if new_images_to_store:
-            update_postgresql_with_s3_urls(new_images_to_store)
+            def insert_postgresql_with_s3_urls(s3_urls):
+                """
+                Insère de nouvelles lignes dans Postgresql avec les URLs S3 associées.
+
+                Paramètres :
+                -----------
+                s3_urls : list of tuples
+                    Liste de tuples (url_source, label, s3_url) à insérer dans la base PostgreSQL.
+                """
+                try:
+                    with engine.connect() as connection:
+                        INSERT_QUERY = """
+                        INSERT INTO plants_data (url_source, label, url_s3)
+                        VALUES (:url_source, :label, :s3_url)
+                        """
+                        with connection.begin():
+                            connection.execute(
+                                text(INSERT_QUERY),
+                                [
+                                    {"url_source": url_source, "label": label, "s3_url": s3_url}
+                                    for url_source, label, s3_url in s3_urls
+                                ],
+                            )
+                    logging.info(f"{len(s3_urls)} nouvelles lignes insérées dans PostgreSQL.")
+                except Exception as e:
+                    logging.error(f"Erreur lors de l'insertion dans PostgreSQL: {e}")
+
+            insert_postgresql_with_s3_urls(new_images_to_store)
 
     except Exception as e:
         logging.error(f"Erreur durant le traitement des images : {e}")

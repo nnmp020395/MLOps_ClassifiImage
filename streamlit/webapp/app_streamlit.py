@@ -233,10 +233,10 @@ elif page == "Admin":
                     buf.seek(0)
                     image = Image.open(buf).convert("RGB")
                     if image.size[0] > 1024 or image.size[1] > 1024:
-                        image.thumbnail((1024, 1024))
+                        image.thumbnail((780, 780))
                         st.warning(f"Redimensionnée : {image.size}")
                     upload_buf = BytesIO()
-                    image.save(upload_buf, format="JPEG", quality=90)
+                    image.save(upload_buf, format="JPEG", quality=80)
                     upload_buf.seek(0)
 
                     s3.upload_fileobj(upload_buf, bucket_name, validated_key)
@@ -259,7 +259,7 @@ elif page == "Admin":
                     image = Image.open(buf).convert("RGB")
                     if image.size[0] > 1024 or image.size[1] > 1024:
                         image.thumbnail((1024, 1024))
-                        st.warning(f"Redimensionnée : {image.size}")
+                        logger.info(f"Redimensionnée : {image.size}")
                     upload_buf = BytesIO()
                     image.save(upload_buf, format="JPEG", quality=90)
                     upload_buf.seek(0)
