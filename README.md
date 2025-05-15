@@ -337,8 +337,8 @@ docker build \
   -t mlops_classifiimage-airflow-custom:latest \
   -f Dockerfile.custom .
 docker tag mlops_classifiimage-airflow-custom \
-  nnmp020395/mlops_classifiimage-airflow-custom:latest
-docker push nnmp020395/mlops_classifiimage-airflow-custom:latest
+  your_docker_hub/mlops_classifiimage-airflow-custom:latest
+docker push your_docker_hub/mlops_classifiimage-airflow-custom:latest
 ```
 Then, move in the `airflow-chart`
 ```bash
@@ -350,7 +350,7 @@ helm install myrelease apache-airflow/airflow -f values.yaml --namespace airflow
 
 Given the deployment steps above, not only Airflow but Minio also require Docker images for deployment to Kubernetes. Repeat the above steps directly using the Dockerfile located in the `./api/Dockerfile.fastapi`, `./mlflow/Dockerfile.mlflow`, and `./streamlit/Dockerfile.streamlit` directories.
 
-The names of these images begin with <mlops_classifiimage-app-name>
+The names of these images begin with <your_docker_hub/mlops_classifiimage-app-name>
 
 The subsequent installation of releases is performed based on the helm.
 
@@ -378,7 +378,9 @@ kubectl port-forward svc/myrelease-webserver 8080:8080 --namespace airflow
 ![airflow-release](./images/airflow-helm-release2.png)
 ![helm-releases](./images/helm-releases.png)
 
-Note: This production portion has yet to be deployed; the charts show conflicts between applications. If you borrow existing Docker images, the releases fail to be linked together to be able to retrieve the database and DAGs.
+Note:
+- Assume that the name of image docker in every values.yaml is correct
+- This production portion has yet to be deployed; the charts show conflicts between applications. If you borrow existing Docker images, the releases fail to be linked together to be able to retrieve the database and DAGs.
 
 
 ## 10. Conclusion and next steps
