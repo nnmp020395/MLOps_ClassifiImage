@@ -5,7 +5,6 @@ import sys
 import time
 from datetime import datetime, timedelta
 from uuid import uuid4
-
 import asyncio
 import boto3
 import torch
@@ -57,7 +56,6 @@ s3_client = boto3.client(
     use_ssl=False,
     config=boto_config,
 )
-
 
 # ------------------ Modèle ------------------
 def find_latest_model_for_date(date_obj):
@@ -137,7 +135,6 @@ async def predict(file: UploadFile = File(...)):
         with torch.no_grad():
             prediction = model(img_tensor).argmax(1).item()
             class_label = class_names[prediction]
-
         return {"prediction": class_label}
 
     except Exception as e:
@@ -163,6 +160,7 @@ async def check_duplicate(file: UploadFile = File(...), label: str = Form(...)):
     except Exception as e:
         logger.error(f"Erreur doublon : {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
+
 
 @app.get("/metrics")
 def metrics():

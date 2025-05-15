@@ -9,4 +9,3 @@ apache-airflow==2.9.0
 prometheus-client==0.16.0
 sqlalchemy==1.4.52
 psycopg2-binary==2.9.10
-

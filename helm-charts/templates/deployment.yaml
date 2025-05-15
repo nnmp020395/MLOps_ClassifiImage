@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-webserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-webserver
+  template:
+    metadata:
+      labels:
+        app: airflow-webserver
+    spec:
+      containers:
+        - name: airflow-webserver
+          image: airflow-webserver:latest #"{{ .Values.airflow.image.repository }}:{{ .Values.airflow.image.tag }}"
+          command: ["airflow", "webserver"]
+          ports:
+            - containerPort: 8080 #{{ .Values.airflow.webPort }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.airflow.env }}
+            - name: {{ $key }}
+              value: "{{ $value }}"
+            {{- end }}
+          volumeMounts:
+            {{- range .Values.airflow.volumes }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+      volumes:
+        {{- range .Values.airflow.volumes }}
+        - name: {{ .name }}
+          hostPath:
+            path: {{ .hostPath }}
+        {{- end }}

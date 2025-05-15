@@ -3,6 +3,7 @@
 This project was realized for the MLOps course of the specialized Master’s AI Data expert & MLops. The objective is to develop a complete machine learning pipeline for image classification. It handles a binary classification task on an image dataset containing labeled “dandelion” and “grass” images.
 A development environment was set for development and tests and a production environment allows the deployment on a Kubernetes cluster.
 
+
 ## 1. Global project architecture
 
 ![Global scheme](./images/global_scheme.png)
@@ -15,6 +16,7 @@ Airflow orchestrates the pipeline for the download and storage of the database, 
 ### Dev environement
 
 * Run Docker
+
 
 For the 1st time
 ```bash
@@ -119,6 +121,7 @@ The input to the model is a single RGB image, resize to 224x224 pixels and the o
 ### Architecture overview
 We use the DINOv2 vision transformer model as a feature extractor. DINOv2 is a self-supervised vision transformer retrained on large-scale image datasets. Specifically, we use the ViT-S/14 variant of DINOv2 without fine-tuning its internal weights. Instead of, we extract a feature embedding from the [CLS] token of the last transformer layer. The DINOv2 output is passed through a simple classification head. We freeze the DINOv2 backbone and train only the classification head. The model is trained using binary cross-entropy loss, optimized with Adam at learning rate of 0.003.
 
+
 The model achieves more than **90%** accuracy on the test set and shows good generalization on both sunny and shaded outdoor scenes.
 
 Structure of the folders for model training and monitoring with Mlflow:
@@ -186,8 +189,6 @@ Once per week, the 3rd dag (below) is triggered and  heck if there are more than
 ![Dag2](./images/dag2.png)
 
 
-
-
 - Production environment
 
 Structure of airflow-chart to deploy on Kubernetes with Helm:
@@ -212,7 +213,6 @@ helm install myrelease apache-airflow/airflow -f values.yaml \
 ## 7. Inference on the model
 
 There are two ways for the user to interact with the model in inference mode.
-
 
 ### Via the API
 
@@ -268,6 +268,7 @@ Structure of the /streamlit folder:
 
 The Streamlit app is accessible at the url : http://localhost:8501. A prediction can be obtained by directly drag and dropping an image or uploading from your local machine.
 
+
 ![Streamlit page 1](./images/streamlit_page1.png)
 
 A second page, accessible with a password, allows an admin to check the label attributed to submitted images, correct it if necessary, and store the correctly labeled image in the minio database. These new images are then use for retraining the model.
@@ -321,6 +322,7 @@ The Streamlit monitoring dashboard is set up to display page views and total pre
 
 ![Streamlit monitoring](./images/streamlit_monitoring.png)
 
+=======
 ## 9. Production environment
 
 Production deployment involves deploying these services to a local Kubernetes cluster via Helm Chart. For stable, reusable, and versioned production, Helm is preferred over the `kubectl apply` approach. YAML files are developed using official charts compatible with different applications.

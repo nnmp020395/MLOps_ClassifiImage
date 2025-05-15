@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-minio
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+        - name: minio
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - server
+            - /data
+            - "--console-address=:{{ .Values.service.consolePort }}"
+          env:
+            - name: MINIO_ROOT_USER
+              value: "{{ .Values.minio.accessKey }}"
+            - name: MINIO_ROOT_PASSWORD
+              value: "{{ .Values.minio.secretKey }}"
+          ports:
+            - containerPort: {{ index .Values.service.port 0 }}
+            - containerPort: {{ index .Values.service.port 1 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}

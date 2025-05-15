@@ -1,0 +1,6 @@
+apiVersion: v2
+name: minio
+description: A Helm Chart for deplpying minio server on Kubernetes
+type: application
+version: 0.1.0
+appVersion: "latest"
