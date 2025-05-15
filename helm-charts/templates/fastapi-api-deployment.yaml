@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: fastapi-api
+  name: {{ .Release.Name }}-fastapi-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi-api
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: fastapi-api
+    spec:
+      containers:
+        - env:
+            - name: FASTAPI_ID
+              value: {{ .Values.fastapi.env.FASTAPI_ID }}
+            - name: FASTAPI_SECRET
+              value: {{ .Values.fastapi.env.FASTAPI_SECRET }}
+          image: {{ .Values.fastapi.image | default "fastapi-api" }}
+          name: fastapi-api
+          ports:
+            - containerPort: {{ .Values.fastapi.service.targetPort }}
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /app/dinov2_classifier.pth
+              name: fastapi-api-claim0
+      restartPolicy: Always
+      volumes:
+        - name: fastapi-api-claim0
+          persistentVolumeClaim:
+            claimName: fastapi-api-claim0

@@ -1,0 +1,28 @@
+replicatCount: 1
+
+global:
+  security:
+    allowInsecureImages: true
+
+image:
+  repository: minio/minio
+  tag: latest
+  pullPolicy: IfNotPresent
+
+minio:
+  enable: true
+  accessKey: minioadmin
+  secretKey: minioadmin
+  defaultBuckets: image-dandelion-grass
+  rootUser: minioadmin
+  rootPassword: minioadmin
+  mode: standalone
+
+service:
+  type: NodePort
+  port:
+    - 9000
+    - 9001
+  nodePort:
+    - 30900
+    - 30901

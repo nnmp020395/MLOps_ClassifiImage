@@ -1,0 +1,40 @@
+# Fichier de configuration pour pre-commit
+# Pour activer les hooks, exécute : pre-commit install
+
+repos:
+  # Hook Black - formateur de code Python conforme à PEP8
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+      - id: black
+
+  # Hook Flake8 - vérifie les erreurs de style PEP8, les erreurs de syntaxe, etc.
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.1.0
+    hooks:
+      - id: flake8
+        additional_dependencies: [flake8-docstrings]  # Vérifie aussi la doc des fonctions
+
+  # Hook isort - trie et organise automatiquement les imports
+  - repo: https://github.com/pre-commit/mirrors-isort
+    rev: v5.10.1
+    hooks:
+      - id: isort
+
+  # Hook check-yaml - s'assure que tes fichiers YAML sont bien formatés
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+
+  # Hook end-of-file-fixer - ajoute une ligne vide à la fin de chaque fichier
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+
+  # Hook trailing-whitespace - supprime les espaces inutiles en fin de ligne
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace

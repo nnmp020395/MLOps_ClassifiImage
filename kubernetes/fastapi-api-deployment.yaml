@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi-api
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: fastapi-api
+    spec:
+      containers:
+        - name: fastapi-api
+          image: fastapi-api
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              value: minioadmin
+            - name: AWS_SECRET_ACCESS_KEY
+              value: minioadmin
+          volumeMounts:
+            - mountPath: /app/dinov2_classifier.pth
+              name: fastapi-api-claim0
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: fastapi-api-claim0
+          persistentVolumeClaim:
+            claimName: fastapi-api-claim0

@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow-server
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yaml
+    kompose.version: 1.35.0 (HEAD)
+    meta.helm.sh/release-name: my-release1
+    meta.helm.sh/release-namespace: default
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    io.kompose.service: mlflow-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: mlflow-server
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yaml
+        kompose.version: 1.35.0 (HEAD)
+      labels:
+        io.kompose.service: mlflow-server
+    spec:
+      containers:
+        - image: mlflow-server
+          livenessProbe:
+            exec:
+              command:
+                - curl -f http://localhost:6000/health || exit 1
+            failureThreshold: 3
+            periodSeconds: 10
+            timeoutSeconds: 5
+          name: mlflow-server
+          ports:
+            - containerPort: 6000
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /mlflow
+              name: mlflow-server-claim0
+      restartPolicy: Always
+      volumes:
+        - name: mlflow-server-claim0
+          persistentVolumeClaim:
+            claimName: mlflow-server-claim0
