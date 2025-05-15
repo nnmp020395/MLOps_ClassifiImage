@@ -1,0 +1,21 @@
+replicaCount: 1
+
+image:
+  repository: nnmp020395/streamlit-dashboard
+  tag: latest
+  pullPolicy: IfNotPresent
+
+minio:
+  accessKey: minioadmin
+  secretKey: minioadmin
+  endpoint: http://minio.default.svc.cluster.local:9000
+  bucket: image-dandelion-grass
+
+service:
+  type: NodePort
+  ports:
+    - 8501
+    - 8502
+  nodePort:
+    - 30851
+    - 30852

@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-streamlit
+  labels:
+    app: streamlit
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: streamlit
+  template:
+    metadata:
+      labels:
+        app: streamlit
+    spec:
+      containers:
+        - name: streamlit
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.ports[0] }}
+              name: http
+            - containerPort: {{ .Values.service.ports[1] }}
+              name: second
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              value: {{ .Values.minio.accessKey }}
+            - name: AWS_SECRET_ACCESS_KEY
+              value: {{ .Values.minio.secretKey }}
+            - name: S3_ENDPOINT
+              value: {{ .Values.minio.endpoint }}
+            - name: S3_BUCKET
+              value: {{ .Values.minio.bucket }}
