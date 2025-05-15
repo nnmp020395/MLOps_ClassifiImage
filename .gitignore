@@ -194,8 +194,3 @@ helm-airflow/
 minio/data/
 mlruns/
 
-# Ignore Streamlit secrets
-secrets.toml
-streamlit/.streamlit/
-streamlit/webapp/.streamlit/
-.streamlit/
