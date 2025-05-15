@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: nnmp020395/streamlit-dashboard
+  repository: your_docker_hub/mlops_classifiimage-streamlit-dashboard
   tag: latest
   pullPolicy: IfNotPresent
 
