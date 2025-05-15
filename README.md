@@ -27,22 +27,21 @@ otherwise
 docker compose up
 ```
 
-All custom docker images for the project are also available at : https://hub.docker.com/r/dessalinesdarryl/mlops_classifimage/ 
+All custom docker images for the project are also available at : https://hub.docker.com/r/dessalinesdarryl/mlops_classifimage/
 
 Official images from grafana (grafana/grafana:latest), postgres (postgres:13) and prometheus (prom/prometheus:latest) are also used in the docker-compose.yaml file.
 
 * First training
 
-Go to the url http://localhost:8080 to access the airflow webserver and trigger the **mlops_project_get_store_images** dag. This will download the images for the database and store them then trigger a 1st training of the model. 
-In development mode, airflow webserver default password and user name are set to airflow. 
+Go to the url http://localhost:8080 to access the airflow webserver and trigger the **mlops_project_get_store_images** dag. This will download the images for the database and store them then trigger a 1st training of the model.
+In development mode, airflow webserver default password and user name are set to airflow.
 
 
 * Run the webapp
 
 After running the docker compose, go to http://localhost:8501 to access the webapp.
-You can then upload in image to get a prediction. 
+You can then upload in image to get a prediction.
 
-### Prod environement
 
 ## 3. Dataset
 The dataset used in this project consists of RGB images labeled as either "dandelion" or "grass", intended for binary image classification, available at https://github.com/btphan95/greenr-airflow/tree/master/dat.
@@ -81,7 +80,7 @@ image-dandelion-grass/
 │   ├── grass/                    # Manually validated images labeled "grass"
 │   └── new_data/
 │       ├── pending_validation/   # User-submitted images awaiting admin validation
-│       └── corrected_data/       # Admin-labeled and approved images 
+│       └── corrected_data/       # Admin-labeled and approved images
 ```
 
 A DAG in Airflow periodically checks for new validated images in corrected_data/. When 10 or more new images are available, they are:
@@ -91,27 +90,7 @@ A DAG in Airflow periodically checks for new validated images in corrected_data/
 3. Used to automatically retrain the classification model.
 
 ![Retrain model](./images/retrain_model_schema.png)
-## 4. Storage
 
-- Production environment
-
-Structure of minio-chart to deploy on Kubernetes with Helm:
-```bash
-└── minio-chart # Top-level folder for charts
-    └──Chart.yaml #
-    └──values.yaml #
-    └──templates  #
-        └──minio-deployment.yaml
-        └──minio-service.yaml
-```
-
-Command line for running the `minio` release with the official template Bitnami
-
-```bash
-helm install minio bitnami/minio \
-  --set rootUser=minioadmin \
-  --set rootPassword=minioadmin
-```
 
 ## 5. Model training
 
@@ -141,7 +120,7 @@ Structure of the folders for model training and monitoring with Mlflow:
 
 Mlflow is used for the monitoring of the training. It is accessible at the url: http://localhost:5001
 
-The page is designed to allow monotoring of different training experiments, and displays the evolution of train accuracy and train loss for each experiment, along with the validation accuracy value. 
+The page is designed to allow monotoring of different training experiments, and displays the evolution of train accuracy and train loss for each experiment, along with the validation accuracy value.
 
 ![Mlflow page](./images/main_mlflow.png)
 
@@ -152,7 +131,7 @@ The page is designed to allow monotoring of different training experiments, and 
 </div>
 
 
-Acess to a specific run gives detailed information regarding the date of the run, duration, status, training parameters and metrics, as depicted below. 
+Acess to a specific run gives detailed information regarding the date of the run, duration, status, training parameters and metrics, as depicted below.
 
 <div style="display: flex; justify-content: center;">
   <img src="./images/mlflow_kpi.png" alt="Mlflow kpi" width="800" />
@@ -161,54 +140,33 @@ Acess to a specific run gives detailed information regarding the date of the run
 
 ## 6. Automated pipeline with Airflow
 
-- Dev environment : 
+- Dev environment :
 
 Airflow webserver is accessible at the url: http://localhost:8080
 
 ![All dags](./images/all_dags.png)
 
-Three dependent dags are set to download the database, train the model, and trigger training if there are more than 10 new images in the database. 
+Three dependent dags are set to download the database, train the model, and trigger training if there are more than 10 new images in the database.
 
 <div style="display: flex; justify-content: center;">
   <img src="./images/dag_dependencies.png" alt="Dag dependencies" width="600" />
 </div>
 
 
-The first dag is useful at the beginning to download the images to Minio and create the SQL database to store the urls and labels of the images. 
+The first dag is useful at the beginning to download the images to Minio and create the SQL database to store the urls and labels of the images.
 
 
 ![Dag1](./images/dag1.png)
 
-The last task triggers the training of the model with the downloaded images (2nd dag below). 
+The last task triggers the training of the model with the downloaded images (2nd dag below).
 
 ![Dag1](./images/dag_train.png)
 
 
-Once per week, the 3rd dag (below) is triggered and  heck if there are more than 10 new images in the database. If there are less than 10, it skips the 2 last tasks, other wise it moves the new images in the training folder and triggers the training dag. 
+Once per week, the 3rd dag (below) is triggered and  heck if there are more than 10 new images in the database. If there are less than 10, it skips the 2 last tasks, other wise it moves the new images in the training folder and triggers the training dag.
 
 ![Dag2](./images/dag2.png)
 
-
-- Production environment
-
-Structure of airflow-chart to deploy on Kubernetes with Helm:
-```bash
-└── airflow-chart # Top-level folder for charts
-    └──Chart.yaml #
-    └──values.yaml #
-    └──templates  #
-        └──airflow-init-deployment.yaml
-        └──airflow-scheduler-deployment.yaml
-        └──airflow-triggerer-deployment.yaml
-        └──airflow-webserver-deployment.yaml
-        └──airflow-init-cm0-configmap.yaml
-```
-Command line for running the `airflow` release
-
-```bash
-helm install myrelease apache-airflow/airflow -f values.yaml \
-    --namespace airflow --create-namespace
-```
 
 ## 7. Inference on the model
 
@@ -236,18 +194,6 @@ curl -X POST http://localhost:8000/predict \
   -H "Content-Type: multipart/form-data" \
   -F "file=@/path/to/your/image.jpg"
 ```
-### TODO
-- Production environment
-
-Structure of fastapi-chart to deploy on Kubernetes with Helm:
-```bash
-└── fastapi-chart # Top-level folder for charts
-    └──Chart.yaml #
-    └──values.yaml #
-    └──templates  #
-        └──deployment.yaml
-        └──service.yaml
-```
 
 ### Via Streamlit
 
@@ -259,7 +205,7 @@ Structure of the /streamlit folder:
 └── streamlit                  # Top-level folder for interaction via Streamlit
     ├── webapp              # setup for the streamlit interface
     │   └──app_streamlit.py   # main script for the interaction via Streamlit
-    │            
+    │
     └── Dockerfile.streamlit  # Dockerfile for the streamlit module
     └── requirements.txt      # requirements for the streamlit module
 ```
@@ -274,9 +220,6 @@ The Streamlit app is accessible at the url : http://localhost:8501. A prediction
 A second page, accessible with a password, allows an admin to check the label attributed to submitted images, correct it if necessary, and store the correctly labeled image in the minio database. These new images are then use for retraining the model.
 
 ![Streamlit page 2](./images/streamlit_page2.png)
-
-### TODO prod env
-
 
 
 ## 8. Monitoring of usage
@@ -303,12 +246,8 @@ Structure of the monitoring folder :
             └──datasources.yml  # Points Grafana to Prometheus URL
 ```
 
-
 In the development environment the dashboards are accessible at the url : http://localhost:3000
 
-
-
-### TODO Prod environment ?
 
 ### API monitoring
 
@@ -322,7 +261,7 @@ The Streamlit monitoring dashboard is set up to display page views and total pre
 
 ![Streamlit monitoring](./images/streamlit_monitoring.png)
 
-=======
+
 ## 9. Production environment
 
 Production deployment involves deploying these services to a local Kubernetes cluster via Helm Chart. For stable, reusable, and versioned production, Helm is preferred over the `kubectl apply` approach. YAML files are developed using official charts compatible with different applications.
@@ -345,25 +284,29 @@ helm update repo # to verify all installations above
 Into `charts`, for each application, Helm will expect a directory structure that matches this:
 
 ```bash
-└── app-chart
-    └──Chart.yaml               # A YAML file containing information about the chart
-    └──values.yaml              # The default configuration values for this chart
-    └──templates                # sub-folder that contains deployment.yaml & service.yaml
-        └──deployment.yaml      #
-        └──service.yaml         #
+├── charts
+  └── app-chart
+  │    └── Chart.yaml               # A YAML file containing information about the chart
+  │    └── values.yaml              # The default configuration values for this chart
+  │    └── templates                # sub-folder that contains deployment.yaml & service.yaml
+  │        └── deployment.yaml      #
+  │        └── service.yaml         #
+  ├── app2-chart
+  │
 ```
 
-sauf Airflow, son directory est différent:
+except Airflow, its directory is different:
 ```bash
-└── airflow-chart
-    └──Chart.yaml
-    └──values.yaml
-    └──templates
-        └──airflow-init-deployment.yaml
-        └──airflow-scheduler-deployment.yaml
-        └──airflow-triggerer-deployment.yaml
-        └──airflow-webserver-deployment.yaml
-        └──airflow-init-cm0-configmap.yaml
+├── charts
+  └── airflow-chart
+      └── Chart.yaml
+      └── values.yaml
+      └── templates
+          └── airflow-init-deployment.yaml
+          └── airflow-scheduler-deployment.yaml
+          └── airflow-triggerer-deployment.yaml
+          └── airflow-webserver-deployment.yaml
+          └── airflow-init-cm0-configmap.yaml
 ```
 
 ### Deployment
@@ -386,7 +329,6 @@ helm install minio bitnami/minio \
 ```
 Run `kubectl port-forward --namespace default svc/minio 9001:9001` to open `localhost:9001`.
 
-
 **Airflow** : use docker file `./airflow/Dockerfile.custom` and build an image that guides the chart find all DAGs:
 
 ```bash
@@ -398,12 +340,45 @@ docker tag mlops_classifiimage-airflow-custom \
   nnmp020395/mlops_classifiimage-airflow-custom:latest
 docker push nnmp020395/mlops_classifiimage-airflow-custom:latest
 ```
-
 Then, move in the `airflow-chart`
 ```bash
 cd charts/airflow-chart
 helm install myrelease apache-airflow/airflow -f values.yaml --namespace airflow --create-namespace
 ```
+
+**FastAPI, MLFlow, Streamlit**
+
+Vue les étapes de déploiement ci-desssus, non seulement Airflow,Minio ont beosin des images Docker pour le déploiement sur Kubernetes. Répètez les étapes ci-dessus en utilisant directement le Dockerfile existé dans les répertoires `./api/Dockerfile.fastapi`, `./mlflow/Dockerfile.mlflow`, `./streamlit/Dockerfile.streamlit`.
+
+Le nom de ces images commence par <mlops_classifiimage-app-name>
+
+L'installation des releases à la suite est réalisé en fonction des helm
+
+### Port-forward
+
+Chaque application contient une porte dédiée que l'on peut interpréter les résultats de déploiement. Il faut suivre des constructions lors de l'installation réussie pour récupérer les identifiants et passwords pour les `localhost`.
+
+
+**Minio**
+```bash
+helm status minio
+kubectl port-forward --namespace default svc/minio 9001:9001
+export ROOT_USER=$(kubectl get secret --namespace default minio -o jsonpath="{.data.root-user}" | base64 -d)
+export ROOT_PASSWORD=$(kubectl get secret --namespace default minio -o jsonpath="{.data.root-password}" | base64 -d)
+echo $ROOT_USER
+echo $ROOT_PASSWORD
+```
+http://localhost:9001
+
+**Airflow**
+```bash
+helm status airflow -n airflow
+kubectl port-forward svc/myrelease-webserver 8080:8080 --namespace airflow
+```
+http://localhost:8080
+
+
+Note: Cette partie de production reste encore à déployer, les charts rendent des conflits entre les applications,
 
 ## 10. Conclusion and next steps
 
@@ -411,11 +386,9 @@ set up a vector database (ex : xxx)
 
 add threshold to push model on minio
 
-Whereas the dandelion/grass classification task is quite easy, we could also try harder tasks such as rocket salad / dandelion leaves classification : 
+Whereas the dandelion/grass classification task is quite easy, we could also try harder tasks such as rocket salad / dandelion leaves classification :
 
 <div style="display: flex; justify-content: space-between;">
   <img src="./images/roquette.jpeg" alt="Roquette" width="40%" />
   <img src="./images/pissenlit.jpeg" alt="Pissenlit" width="40%" />
 </div>
-
-
