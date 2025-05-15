@@ -8,10 +8,16 @@ A development environment was set for development and tests and a production env
 
 ![Global scheme](./images/global_scheme.png)
 
-Airflow orchestrates the pipeline for the download and storage of the database, training and serving of the model and retraining when new images are available. Monotoring of training is available through MlFlow. The classifier can be accessed via an API and via a Streamlit interface. New images uploaded to Streamlit are stored for further retraining of the model. Prometheus along with Grafana are used for the monitoring of the API use. Deployment is automatized via the CI/CD using Helm Charts.
+Airflow orchestrates the pipeline for the download and storage of the database, training and serving of the model and retraining when new images are available. Monotoring of training is available through MlFlow. The classifier can be accessed via an API and via a Streamlit interface. New images uploaded to Streamlit are stored for further retraining of the model. Prometheus along with Grafana are used for the monitoring of the API use. Deployment is set up on a Kubernetes cluster 
+using Helm Charts.
 
 
 ## 2. Quick setup
+
+Start by cloning the repositery
+```bash
+git clone https://github.com/nnmp020395/MLOps_ClassifiImage
+```
 
 ### Dev environement
 
@@ -33,22 +39,40 @@ Official images from grafana (grafana/grafana:latest), postgres (postgres:13) an
 
 * First training
 
-Go to the url http://localhost:8080 to access the airflow webserver and trigger the **mlops_project_get_store_images** dag. This will download the images for the database and store them then trigger a 1st training of the model.
-In development mode, airflow webserver default password and user name are set to airflow.
+Go to the url http://localhost:8080 to access the airflow webserver and trigger the **mlops_project_get_store_images** dag. This will download the images for the database and store them, then trigger a first training of the model to make the API accessible.
+In development mode, airflow webserver default password and user name are set to "airflow".
 
 
 * Run the webapp
 
-After running the docker compose, go to http://localhost:8501 to access the webapp.
+After running the dag, go to http://localhost:8501 to access the webapp.
 You can then upload in image to get a prediction.
 
 
 ## 3. Dataset
-The dataset used in this project consists of RGB images labeled as either "dandelion" or "grass", intended for binary image classification, available at https://github.com/btphan95/greenr-airflow/tree/master/dat.
 
-The training and validation sets are manually curated and stored in MinIO.
-Images can be added dynamically through the Streamlit interface, and manually validated by an admin before being used for retraining.
 Images are collected from public datasets and user uploads. All data is centralized in an S3-compatible MinIO bucket, ensuring scalability, high availability, and seamless integration with the MLOps pipeline.
+
+The core dataset used in this project consists of RGB images labeled as either "dandelion" or "grass", intended for binary image classification, available at https://github.com/btphan95/greenr-airflow/tree/master/data.
+
+<div style="display: flex; justify-content: space-between;">
+  <figure style="width: 49%; text-align: center;">
+    <img src="./images/grass_example.jpg" alt="Grass image example" style="width: 100%;" />
+    <figcaption>Grass image example</figcaption>
+  </figure>
+  <figure style="width: 49%; text-align: center;">
+    <img src="./images/dandelion_example.jpg" alt="Dandelion image example" style="width: 80%;" />
+    <figcaption>Dandelion image example</figcaption>
+  </figure>
+</div>
+
+
+
+
+Starting from this database, the training and validation sets are automatically curated and stored in MinIO.
+
+The training database is also dynamically enriched using images added through the Streamlit interface. Labels of images are manually validated by an admin before being used for retraining.
+
 
 ## 4. Storage
 
@@ -383,13 +407,19 @@ Note: This production portion has yet to be deployed; the charts show conflicts 
 
 ## 10. Conclusion and next steps
 
-set up a vector database (ex : xxx)
+This project allows to set up a functioning MlOps pipeline for a classification model.
 
-add threshold to push model on minio
+To further improve it, we could in the future integrate a vector database to store and manage image embeddings within a feature store. By extracting feature vectors from images using our trained model and storing them in a vector database such as Chroma, FAISS, Pinecone, or Weaviate, we could enable mode efficient similarity search, and deduplication when storing images uploaded on streamlit. Incorporating this into the MLOps workflow would make it more scalable and production-ready. 
 
-Whereas the dandelion/grass classification task is quite easy, we could also try harder tasks such as rocket salad / dandelion leaves classification :
+Another improvement would be to save the retrained model on MinIO and expose the it on the API only if certain criteria are met (for example, a threshold on test accuracy). This safeguard has not yet been implemented. 
+
+As food for thought, whereas the dandelion/grass classification task is quite easy, we could also try harder tasks such as rocket salad / dandelion leaves classification, what do you think : 
+
 
 <div style="display: flex; justify-content: space-between;">
-  <img src="./images/roquette.jpeg" alt="Roquette" width="40%" />
+<figure style="width: 100%; text-align: center;">
+  <img src="./images/roquette.jpeg" alt="Roquette" width="48%" />
   <img src="./images/pissenlit.jpeg" alt="Pissenlit" width="40%" />
+  <figcaption>Dandelion or Rocket Salad ???</figcaption>
+  </figure>
 </div>
