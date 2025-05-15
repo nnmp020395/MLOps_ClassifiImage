@@ -348,18 +348,18 @@ helm install myrelease apache-airflow/airflow -f values.yaml --namespace airflow
 
 **FastAPI, MLFlow, Streamlit**
 
-Vue les étapes de déploiement ci-desssus, non seulement Airflow,Minio ont beosin des images Docker pour le déploiement sur Kubernetes. Répètez les étapes ci-dessus en utilisant directement le Dockerfile existé dans les répertoires `./api/Dockerfile.fastapi`, `./mlflow/Dockerfile.mlflow`, `./streamlit/Dockerfile.streamlit`.
+Given the deployment steps above, not only Airflow but Minio also require Docker images for deployment to Kubernetes. Repeat the above steps directly using the Dockerfile located in the `./api/Dockerfile.fastapi`, `./mlflow/Dockerfile.mlflow`, and `./streamlit/Dockerfile.streamlit` directories.
 
-Le nom de ces images commence par <mlops_classifiimage-app-name>
+The names of these images begin with <mlops_classifiimage-app-name>
 
-L'installation des releases à la suite est réalisé en fonction des helm
+The subsequent installation of releases is performed based on the helm.
+
 
 ### Port-forward
 
-Chaque application contient une porte dédiée que l'on peut interpréter les résultats de déploiement. Il faut suivre des constructions lors de l'installation réussie pour récupérer les identifiants et passwords pour les `localhost`.
+Each application contains a configured port through which the deployment results can be interpreted. During a successful installation, you must follow the builds to retrieve the logins and passwords for the `localhost`.
 
-
-**Minio**
+**Minio** : http://localhost:9001
 ```bash
 helm status minio
 kubectl port-forward --namespace default svc/minio 9001:9001
@@ -368,17 +368,18 @@ export ROOT_PASSWORD=$(kubectl get secret --namespace default minio -o jsonpath=
 echo $ROOT_USER
 echo $ROOT_PASSWORD
 ```
-http://localhost:9001
+![minio_localhost](./images/minio-localhost-release.png)
 
-**Airflow**
+**Airflow** : http://localhost:8080
 ```bash
 helm status airflow -n airflow
 kubectl port-forward svc/myrelease-webserver 8080:8080 --namespace airflow
 ```
-http://localhost:8080
+![airflow-release](./images/airflow-helm-release2.png)
+![helm-releases](./images/helm-releases.png)
 
+Note: This production portion has yet to be deployed; the charts show conflicts between applications. If you borrow existing Docker images, the releases fail to be linked together to be able to retrieve the database and DAGs.
 
-Note: Cette partie de production reste encore à déployer, les charts rendent des conflits entre les applications,
 
 ## 10. Conclusion and next steps
 
