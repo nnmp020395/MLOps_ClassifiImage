@@ -5,7 +5,6 @@ import sys
 import time
 from datetime import datetime, timedelta
 from uuid import uuid4
-import asyncio
 import boto3
 import torch
 import torchvision.transforms as transforms
@@ -91,7 +90,6 @@ logger.info(f"Chargement du modèle : {object_key}")
 model_buffer = io.BytesIO()
 s3_client.download_fileobj(bucket_name, object_key, model_buffer)
 model_buffer.seek(0)
-# Réflechir à un moyen d'enlever la dépendance à ce chargement pour que l'api tourne sans la détection du model ++++++
 model = load_model(model_buffer)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
