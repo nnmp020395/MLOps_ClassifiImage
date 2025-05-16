@@ -17,15 +17,12 @@ import time
 from datetime import datetime
 
 import boto3
-# import matplotlib.pyplot as plt
-# import mlflow.pytorch
 import s3fs
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 from mlflow.tracking import MlflowClient
 from PIL import Image
-# from sklearn.metrics import auc, roc_curve
 from torch import optim
 from torch.utils.data import DataLoader, Dataset
 
@@ -271,27 +268,7 @@ with mlflow.start_run(run_name=run_name):
     mlflow.log_metric("val_accuracy", val_acc)
     logging.info(f"Validation Accuracy = {val_acc:.2f}%")
 
-    # ------------------ ROC CURVE ------------------
-    # fpr, tpr, _ = roc_curve(all_labels, all_outputs)
-    # roc_auc = auc(fpr, tpr)
-    # mlflow.log_metric("roc_auc", roc_auc)
-    # logging.info(f"AUC: {roc_auc:.4f}")
-
-    # # Plot the ROC curve
-    # plt.figure()
-    # plt.plot(fpr, tpr, color="blue", label=f"AUC = {roc_auc:.4f}")
-    # plt.plot([0, 1], [0, 1], color="k", linestyle="--")
-    # plt.xlabel("False Positive Rate")
-    # plt.ylabel("True Positive Rate")
-    # plt.title("ROC Curve")
-    # plt.legend(loc="lower right")
-    # plt.savefig("roc_curve.png")
-    # plt.close()
-
-    # mlflow.log_artifact("roc_curve.png", artifact_path="roc_curve")
-    # logging.info("Courbe ROC as an ")
-
-    # ------------------ SAVE MODEL ------------------
+    # ------------------ SAUVEGARDE DU MODÈLE ------------------
     s3_client = boto3.client(
         "s3",
         aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", "minioadmin"),

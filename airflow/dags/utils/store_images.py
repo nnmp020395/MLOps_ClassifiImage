@@ -7,7 +7,6 @@ Ce fichier contient des fonctions pour :
 2. Télécharger les images et les uploader sur un bucket S3.
 3. Mettre à jour la base SQLite avec les URLs des images stockées sur S3.
 """
-# from airflow.hooks.base import BaseHook
 import logging
 import os
 from io import BytesIO
@@ -129,7 +128,7 @@ def process_images(**kwargs):
             except Exception as e:
                 logging.error(f"Failed to process {url_source}: {e}")
 
-            # Mettre à jour MySQL avec les URLs S3
+            # Mise à jour de postgre avec les URLs S3
         if s3_urls:
             update_postgresql_with_s3_urls(s3_urls)
     except Exception as e:

@@ -1,3 +1,14 @@
+"""
+Module de détection de doublons d'images basé sur des embeddings extraits via ResNet18.
+Il permet d'obtenir des embeddings d'images, de vérifier si une image est un doublon
+dans un bucket S3, et de maintenir un index local d'images pour un usage en mémoire.
+
+Fonctionnalités :
+- Extraction d'embeddings avec un modèle ResNet18 pré-entraîné.
+- Détection de doublons en comparant les similarités cosinus.
+- Indexation locale d'embeddings d'images.
+"""
+
 import logging
 import os
 from io import BytesIO
@@ -9,7 +20,7 @@ import torchvision.models as models
 import torchvision.transforms as transforms
 from PIL import Image
 
-# ---------- CONFIGURATION ----------
+# ---------- LOGGING ----------
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -27,7 +38,7 @@ logger.info("Chargement du modèle ResNet18...")
 resnet = models.resnet18(pretrained=True)
 resnet = torch.nn.Sequential(
     *list(resnet.children())[:-1]
-)  # Retirer la couche de classification
+)  # Retire la dernière couche de classification
 resnet.eval()
 
 # ---------- INDEX LOCAL EN MÉMOIRE ----------
@@ -35,8 +46,17 @@ embedding_index = []
 filename_index = []
 
 
-# ---------- FONCTIONS UTILITAIRES ----------
+# ---------- FONCTIONS ----------
 def get_embedding(image_bytes: bytes) -> np.ndarray:
+    """
+    Extrait l'embedding d'une image à partir de ses bytes en utilisant ResNet18.
+
+    Args:
+        image_bytes (bytes): Image sous forme binaire.
+
+    Returns:
+        np.ndarray: Embedding de l'image sous forme de vecteur numpy.
+    """
     image = Image.open(BytesIO(image_bytes)).convert("RGB")
     tensor = transform(image).unsqueeze(0)
     with torch.no_grad():
@@ -47,6 +67,20 @@ def get_embedding(image_bytes: bytes) -> np.ndarray:
 def is_duplicate(
     embedding: np.ndarray, s3_client, bucket_name, prefix="raw/", threshold: float = 0.9
 ) -> bool:
+    """
+    Vérifie si un embedding correspond à un doublon dans un bucket S3 en comparant
+    la similarité cosinus avec les images déjà présentes.
+
+    Args:
+        embedding (np.ndarray): Embedding de l'image à vérifier.
+        s3_client: Client S3 boto3 configuré.
+        bucket_name (str): Nom du bucket S3.
+        prefix (str, optional): Préfixe du chemin dans le bucket. Par défaut "raw/".
+        threshold (float, optional): Seuil de similarité pour considérer un doublon. Par défaut 0.9.
+
+    Returns:
+        bool: True si un doublon est détecté, sinon False.
+    """
     embedding = embedding / np.linalg.norm(embedding)
 
     try:
@@ -79,6 +113,13 @@ def is_duplicate(
 
 
 def add_image_to_index(filename: str, embedding: np.ndarray):
+    """
+    Ajoute une image et son embedding à l'index local en mémoire.
+
+    Args:
+        filename (str): Nom du fichier image.
+        embedding (np.ndarray): Embedding associé à l'image.
+    """
     embedding_index.append(embedding)
     filename_index.append(filename)
     logger.info(f"Image '{filename}' ajoutée à l'index local.")
