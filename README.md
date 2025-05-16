@@ -55,18 +55,20 @@ Images are collected from public datasets and user uploads. All data is centrali
 
 The core dataset used in this project consists of RGB images labeled as either "dandelion" or "grass", intended for binary image classification, available at https://github.com/btphan95/greenr-airflow/tree/master/data.
 
-<div style="display: flex; justify-content: space-between;">
-  <figure style="width: 49%; text-align: center;">
-    <img src="./images/grass_example.jpg" alt="Grass image example" style="width: 100%;" />
-    <figcaption>Grass image example</figcaption>
-  </figure>
-  <figure style="width: 49%; text-align: center;">
-    <img src="./images/dandelion_example.jpg" alt="Dandelion image example" style="width: 80%;" />
-    <figcaption>Dandelion image example</figcaption>
-  </figure>
-</div>
-
-
+<p align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="./images/grass_example.jpg" width="260"/><br>
+        <em>Grass image example</em>
+      </td>
+      <td align="center">
+        <img src="./images/dandelion_example.jpg" width="200"/><br>
+        <em>Dandelion image example</em>
+      </td>
+    </tr>
+  </table>
+</p>
 
 
 Starting from this database, the training and validation sets are automatically curated and stored in MinIO.
@@ -103,7 +105,7 @@ List all tables :
 \dt
 ```
 
-Do a SQL request,f for example to list the stored images : 
+Do a SQL request, for example to list the stored images : 
 
 ```bash
 SELECT * FROM plants_data;
@@ -150,7 +152,7 @@ A DAG in Airflow periodically checks for new validated images in corrected_data/
 Organisation of the ```/raw``` folder in MinIO :
 ![Minio images folders](./images/minio_images.png)
 
-Organisation of the ```/model`` folder in MinIO :
+Organisation of the ```/model``` folder in MinIO :
 ![Minio model folders](./images/minio_model.png)
 
 ## 5. Model training
@@ -453,10 +455,14 @@ Another improvement would be to save the retrained model on MinIO and expose the
 As food for thought, whereas the dandelion/grass classification task is quite easy, we could also try harder tasks such as rocket salad / dandelion leaves classification, what do you think : 
 
 
-<div style="display: flex; justify-content: space-between;">
-<figure style="width: 100%; text-align: center;">
-  <img src="./images/roquette.jpeg" alt="Roquette" width="48%" />
-  <img src="./images/pissenlit.jpeg" alt="Pissenlit" width="40%" />
-  <figcaption>Dandelion or Rocket Salad ???</figcaption>
-  </figure>
-</div>
+<p align="center">
+  <table>
+    <tr>
+      <td><img src="./images/roquette.jpeg" width="280"></td>
+      <td><img src="./images/pissenlit.jpeg" width="240"></td>
+    </tr>
+    <tr>
+      <td colspan="2" align="center"><em>Dandelion or Rocket Salad ???</em></td>
+    </tr>
+  </table>
+</p>
