@@ -10,4 +10,3 @@ s3fs==2023.6.0
 fsspec==2023.6.0
 pytest
 pillow==10.2.0
-

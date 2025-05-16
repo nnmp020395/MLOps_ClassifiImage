@@ -19,13 +19,12 @@ from prometheus_client import REGISTRY, Counter, start_http_server
 import streamlit as st
 
 # ------------------ LOGGING SETUP ------------------
-log_dir = "logs"
 os.makedirs(log_dir, exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler(f"{log_dir}/streamlit_app.log"),
+        logging.FileHandler(f"logs/streamlit_app.log"),
         logging.StreamHandler(),
     ],
 )

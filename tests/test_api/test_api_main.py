@@ -14,7 +14,19 @@ from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from api.main import app  # Adapter si nécessaire selon l'organisation du projet
+import sys
+import os
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "../../"))
+SRC_DIR = os.path.join(ROOT_DIR, "src")
+AIRFLOW_UTILS_DIR = os.path.join(ROOT_DIR, "airflow/dags/utils")
+
+sys.path.insert(0, ROOT_DIR)
+sys.path.insert(0, SRC_DIR)
+sys.path.insert(0, AIRFLOW_UTILS_DIR)
+
+from api.main import app
 
 client = TestClient(app)
 
@@ -38,8 +50,8 @@ class TestAPI(unittest.TestCase):
     Classe de test unitaire pour les endpoints de l'API DINOv2 Classifier.
     """
 
-    @patch("main.model")
-    @patch("main.transform")
+    @patch("api.main.model")
+    @patch("api.main.transform")
     def test_predict_success(self, mock_transform, mock_model):
         """
         Teste le endpoint POST /predict avec une image valide.
@@ -61,9 +73,9 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(response.json()["prediction"], ["dandelion", "grass"])
 
-    @patch("main.get_embedding", return_value=[0.1]*128)
-    @patch("main.is_duplicate", return_value=False)
-    @patch("main.s3_client.upload_fileobj")
+    @patch("api.main.get_embedding", return_value=[0.1] * 128)
+    @patch("api.main.is_duplicate", return_value=False)
+    @patch("api.main.s3_client.upload_fileobj")
     def test_check_duplicate_new(self, mock_upload, mock_is_duplicate, mock_get_embedding):
         """
         Teste le endpoint POST /check_duplicate pour une image inconnue (non dupliquée).
@@ -80,8 +92,8 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "new")
 
-    @patch("main.get_embedding", return_value=[0.1]*128)
-    @patch("main.is_duplicate", return_value=True)
+    @patch("api.main.get_embedding", return_value=[0.1] * 128)
+    @patch("api.main.is_duplicate", return_value=True)
     def test_check_duplicate_known(self, mock_is_duplicate, mock_get_embedding):
         """
         Teste le endpoint POST /check_duplicate pour une image connue (dupliquée).
