@@ -2,7 +2,7 @@ replicaCount: 1
 
 images:
   airflow:
-    repository: nnmp020395/mlops_classifiimage-airflow-custom
+    repository: your_docker_hub/mlops_classifiimage-airflow-custom
     tag: latest
     pullPolicy: IfNotPresent
 

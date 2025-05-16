@@ -6,7 +6,7 @@ env:
 
 image:
   pullPolicy: IfNotPresent
-  repository: nnmp020395/mlops_classifiimage-airflow-custom
+  repository: your_docker_hub/mlops_classifiimage-airflow-custom
   tag: v2
 resources: {}
 

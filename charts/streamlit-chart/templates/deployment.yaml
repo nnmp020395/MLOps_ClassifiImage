@@ -1,24 +1,28 @@
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fastapi
+  name: {{ .Release.Name }}-streamlit
+  labels:
+    app: streamlit
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: fastapi
+      app: streamlit
   template:
     metadata:
       labels:
-        app: fastapi
+        app: streamlit
     spec:
       containers:
-        - name: fastapi
+        - name: streamlit
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: 8000
+            - containerPort: {{ .Values.service.ports[0] }}
+              name: http
+            - containerPort: {{ .Values.service.ports[1] }}
+              name: second
           env:
             - name: AWS_ACCESS_KEY_ID
               value: {{ .Values.minio.accessKey }}
@@ -26,9 +30,5 @@ spec:
               value: {{ .Values.minio.secretKey }}
             - name: S3_ENDPOINT
               value: {{ .Values.minio.endpoint }}
-            - name: MINIO_BUCKET
+            - name: S3_BUCKET
               value: {{ .Values.minio.bucket }}
-          volumeMounts:
-            {{- toYaml .Values.volumeMounts | nindent 12 }}
-      volumes:
-        {{- toYaml .Values.volumes | nindent 8 }}

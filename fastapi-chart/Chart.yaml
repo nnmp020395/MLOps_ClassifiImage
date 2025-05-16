@@ -1,6 +1,0 @@
-apiVersion: v2
-name: fastapi
-description: A Helm chart for deploying fastapi
-type: application
-version: 0.1.0
-appVersion: "1.0.0"
