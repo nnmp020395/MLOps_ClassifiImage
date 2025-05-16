@@ -1,6 +1,6 @@
 # MLOps_ClassifiImage
 
-This project was realized for the MLOps course of the specialized Master’s AI Data expert & MLops. The objective is to develop a complete machine learning pipeline for image classification. It handles a binary classification task on an image dataset containing labeled “dandelion” and “grass” images.
+This project was realized for the MLOps course of the specialized Master’s AI Data expert & MLops at Telecom Paris. The objective is to develop a complete machine learning pipeline for image classification. It handles a binary classification task on an image dataset containing labeled “dandelion” and “grass” images.
 A development environment was set for development and tests and a production environment allows the deployment on a Kubernetes cluster.
 
 
@@ -8,13 +8,12 @@ A development environment was set for development and tests and a production env
 
 ![Global scheme](./images/global_scheme.png)
 
-Airflow orchestrates the pipeline for the download and storage of the database, training and serving of the model and retraining when new images are available. Monotoring of training is available through MlFlow. The classifier can be accessed via an API and via a Streamlit interface. New images uploaded to Streamlit are stored for further retraining of the model. Prometheus along with Grafana are used for the monitoring of the API use. Deployment is set up on a Kubernetes cluster 
-using Helm Charts.
+Airflow orchestrates the pipeline for the download and storage of the database, training and serving of the model and retraining when new images are available. Monotoring of training is available through MlFlow. The classifier can be accessed via an API and via a Streamlit interface. New images uploaded to Streamlit are stored for further retraining of the model. Prometheus along with Grafana are used for the monitoring of the API use and Streamlit interactions. Deployment is set up on a Kubernetes cluster using Helm Charts (see part 10.)
 
 
 ## 2. Quick setup
 
-Start by cloning the repositery
+Start by cloning this repositery
 ```bash
 git clone https://github.com/nnmp020395/MLOps_ClassifiImage
 ```
@@ -24,11 +23,12 @@ git clone https://github.com/nnmp020395/MLOps_ClassifiImage
 * Run Docker
 
 
-For the 1st time
+For the first time:
+
 ```bash
 docker compose up -d --build
 ```
-otherwise
+otherwise to restart the containers:
 ```bash
 docker compose up
 ```
@@ -51,22 +51,24 @@ You can then upload in image to get a prediction.
 
 ## 3. Dataset
 
-Images are collected from public datasets and user uploads. All data is centralized in an S3-compatible MinIO bucket, ensuring scalability, high availability, and seamless integration with the MLOps pipeline.
+Training images are collected from public datasets and user uploads. All data is centralized in an S3-compatible MinIO bucket, ensuring scalability, high availability, and seamless integration with the MLOps pipeline.
 
 The core dataset used in this project consists of RGB images labeled as either "dandelion" or "grass", intended for binary image classification, available at https://github.com/btphan95/greenr-airflow/tree/master/data.
 
-<div style="display: flex; justify-content: space-between;">
-  <figure style="width: 49%; text-align: center;">
-    <img src="./images/grass_example.jpg" alt="Grass image example" style="width: 100%;" />
-    <figcaption>Grass image example</figcaption>
-  </figure>
-  <figure style="width: 49%; text-align: center;">
-    <img src="./images/dandelion_example.jpg" alt="Dandelion image example" style="width: 80%;" />
-    <figcaption>Dandelion image example</figcaption>
-  </figure>
-</div>
-
-
+<p align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="./images/grass_example.jpg" width="260"/><br>
+        <em>Grass image example</em>
+      </td>
+      <td align="center">
+        <img src="./images/dandelion_example.jpg" width="200"/><br>
+        <em>Dandelion image example</em>
+      </td>
+    </tr>
+  </table>
+</p>
 
 
 Starting from this database, the training and validation sets are automatically curated and stored in MinIO.
@@ -76,7 +78,7 @@ The training database is also dynamically enriched using images added through th
 
 ## 4. Storage
 
-### in PostgreSQL
+### - in PostgreSQL
 A PostgreSQL database keeps track of all the processed images. The **plants_data** table includes the following fields:
 
 | Column Name | Description                       |
@@ -86,7 +88,38 @@ A PostgreSQL database keeps track of all the processed images. The **plants_data
 | label       | Image class (`dandelion`/`grass`) |
 | url\_s3     | Full MinIO path to the image      |
 
-### in Minio Bucket: ```image-dandelion-grass```
+To access the database using cli, start with identifying the PostgreSQL container id : 
+
+```bash
+docker ps
+docker exec -it <postgres_container_id_or_name> bash
+```
+Connect to the airflow database
+```bash
+psql -U airflow -d airflow
+```
+
+List all tables : 
+
+```bash
+\dt
+```
+
+Then you can a SQL request, for example to list the stored images : 
+
+```bash
+SELECT * FROM plants_data;
+```
+Plants_data table schema :
+
+![Database schema](./images/sql_schema.png)
+
+Data base extract showing the core dataset (from the btphan95 git repo) and images stored from the Streamlit interactions (notice the difference in the "url_source" format): 
+
+![Database extract](./images/db_extract.png)
+
+
+### - in Minio Bucket: ```image-dandelion-grass```
 
 MinIO is used as the central object store for both training/inference images and serialized model weights. It provides a lightweight, self-hosted, and S3-compatible storage solution integrated into the entire MLOps workflow.
 
@@ -115,6 +148,12 @@ A DAG in Airflow periodically checks for new validated images in corrected_data/
 
 ![Retrain model](./images/retrain_model_schema.png)
 
+
+Organisation of the ```/raw``` folder in MinIO :
+![Minio images folders](./images/minio_images.png)
+
+Organisation of the ```/model``` folder in MinIO :
+![Minio model folders](./images/minio_model.png)
 
 ## 5. Model training
 
@@ -182,12 +221,12 @@ The first dag is useful at the beginning to download the images to Minio and cre
 
 ![Dag1](./images/dag1.png)
 
-The last task triggers the training of the model with the downloaded images (2nd dag below).
+The last task triggers the training of the model with the downloaded images (second dag below).
 
 ![Dag1](./images/dag_train.png)
 
 
-Once per week, the 3rd dag (below) is triggered and  heck if there are more than 10 new images in the database. If there are less than 10, it skips the 2 last tasks, other wise it moves the new images in the training folder and triggers the training dag.
+Once per week, the third dag (below) is triggered and checks if there are more than 10 new images in the database. If there are less than 10, it skips the 2 last tasks, other wise it moves the new images in the training folder and triggers the training dag.
 
 ![Dag2](./images/dag2.png)
 
@@ -209,7 +248,8 @@ Structure of the /api folder:
     └──requirements.txt  # Requirements for the FastAPI module
 ```
 
-- Dev environment
+- Dev environment: 
+
 The API is accessible at the url : http://localhost:8000. A prediction can be made using the following command :
 
 ```bash
@@ -288,11 +328,11 @@ The Streamlit monitoring dashboard is set up to display page views and total pre
 
 ## 9. Production environment
 
-Production deployment involves deploying these services to a local Kubernetes cluster via Helm Chart. For stable, reusable, and versioned production, Helm is preferred over the `kubectl apply` approach. YAML files are developed using official charts compatible with different applications.
+The production deployment involves deploying these services to a local Kubernetes cluster via Helm Chart. For stable, reusable, and versioned production, Helm is preferred over the `kubectl apply` approach. YAML files are developed using official charts compatible with different applications.
 
 We chose the Docker-desktop cluster, which is provided by Docker Desktop and allows us to deploy directly without the need to define a virtual machine or other installations.
 
-### Installation Helm et les charts
+### Installation of Helm and Charts handling
 
 Install Helm following the guide https://helm.sh/fr/docs/intro/install/
 
@@ -374,7 +414,7 @@ helm install myrelease apache-airflow/airflow -f values.yaml --namespace airflow
 
 Given the deployment steps above, not only Airflow but Minio also require Docker images for deployment to Kubernetes. Repeat the above steps directly using the Dockerfile located in the `./api/Dockerfile.fastapi`, `./mlflow/Dockerfile.mlflow`, and `./streamlit/Dockerfile.streamlit` directories.
 
-The names of these images begin with <your_docker_hub/mlops_classifiimage-app-name>
+The names of these images begin with <mlops_classifiimage-app-name>
 
 The subsequent installation of releases is performed based on the helm.
 
@@ -400,11 +440,10 @@ helm status airflow -n airflow
 kubectl port-forward svc/myrelease-webserver 8080:8080 --namespace airflow
 ```
 ![airflow-release](./images/airflow-helm-release2.png)
+
 ![helm-releases](./images/helm-releases.png)
 
-Note:
-- Assume that the name of image docker in every values.yaml is correct
-- This production portion has yet to be deployed; the charts show conflicts between applications. If you borrow existing Docker images, the releases fail to be linked together to be able to retrieve the database and DAGs.
+Note: This production portion has yet to be deployed; the charts show conflicts between applications. If you borrow existing Docker images, the releases fail to be linked together to be able to retrieve the database and DAGs.
 
 
 ## 10. Conclusion and next steps
@@ -418,10 +457,14 @@ Another improvement would be to save the retrained model on MinIO and expose the
 As food for thought, whereas the dandelion/grass classification task is quite easy, we could also try harder tasks such as rocket salad / dandelion leaves classification, what do you think : 
 
 
-<div style="display: flex; justify-content: space-between;">
-<figure style="width: 100%; text-align: center;">
-  <img src="./images/roquette.jpeg" alt="Roquette" width="48%" />
-  <img src="./images/pissenlit.jpeg" alt="Pissenlit" width="40%" />
-  <figcaption>Dandelion or Rocket Salad ???</figcaption>
-  </figure>
-</div>
+<p align="center">
+  <table>
+    <tr>
+      <td><img src="./images/roquette.jpeg" width="280"></td>
+      <td><img src="./images/pissenlit.jpeg" width="240"></td>
+    </tr>
+    <tr>
+      <td colspan="2" align="center"><em>Dandelion or Rocket Salad ???</em></td>
+    </tr>
+  </table>
+</p>

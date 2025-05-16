@@ -128,7 +128,6 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
 .venv
 env/
 venv/
@@ -174,7 +173,6 @@ cython_debug/
 .pypirc
 
 # .gitignore
-*.env
 config.json
 
 # Ignore all .pth files
@@ -194,3 +192,4 @@ helm-airflow/
 minio/data/
 mlruns/
 
+dags/
