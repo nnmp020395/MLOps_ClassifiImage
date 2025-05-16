@@ -401,8 +401,8 @@ docker build \
   -t mlops_classifiimage-airflow-custom:latest \
   -f Dockerfile.custom .
 docker tag mlops_classifiimage-airflow-custom \
-  nnmp020395/mlops_classifiimage-airflow-custom:latest
-docker push nnmp020395/mlops_classifiimage-airflow-custom:latest
+  your_docker_hub/mlops_classifiimage-airflow-custom:latest
+docker push your_docker_hub/mlops_classifiimage-airflow-custom:latest
 ```
 Then, move in the `airflow-chart`
 ```bash
