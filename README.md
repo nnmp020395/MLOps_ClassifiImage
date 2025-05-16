@@ -1,6 +1,6 @@
 # MLOps_ClassifiImage
 
-This project was realized for the MLOps course of the specialized Master’s AI Data expert & MLops. The objective is to develop a complete machine learning pipeline for image classification. It handles a binary classification task on an image dataset containing labeled “dandelion” and “grass” images.
+This project was realized for the MLOps course of the specialized Master’s AI Data expert & MLops at Telecom Paris. The objective is to develop a complete machine learning pipeline for image classification. It handles a binary classification task on an image dataset containing labeled “dandelion” and “grass” images.
 A development environment was set for development and tests and a production environment allows the deployment on a Kubernetes cluster.
 
 
@@ -8,13 +8,12 @@ A development environment was set for development and tests and a production env
 
 ![Global scheme](./images/global_scheme.png)
 
-Airflow orchestrates the pipeline for the download and storage of the database, training and serving of the model and retraining when new images are available. Monotoring of training is available through MlFlow. The classifier can be accessed via an API and via a Streamlit interface. New images uploaded to Streamlit are stored for further retraining of the model. Prometheus along with Grafana are used for the monitoring of the API use. Deployment is set up on a Kubernetes cluster 
-using Helm Charts.
+Airflow orchestrates the pipeline for the download and storage of the database, training and serving of the model and retraining when new images are available. Monotoring of training is available through MlFlow. The classifier can be accessed via an API and via a Streamlit interface. New images uploaded to Streamlit are stored for further retraining of the model. Prometheus along with Grafana are used for the monitoring of the API use and Streamlit interactions. Deployment is set up on a Kubernetes cluster using Helm Charts (see part 10.)
 
 
 ## 2. Quick setup
 
-Start by cloning the repositery
+Start by cloning this repositery
 ```bash
 git clone https://github.com/nnmp020395/MLOps_ClassifiImage
 ```
@@ -24,11 +23,12 @@ git clone https://github.com/nnmp020395/MLOps_ClassifiImage
 * Run Docker
 
 
-For the 1st time
+For the first time:
+
 ```bash
 docker compose up -d --build
 ```
-otherwise
+otherwise to restart the containers:
 ```bash
 docker compose up
 ```
@@ -51,7 +51,7 @@ You can then upload in image to get a prediction.
 
 ## 3. Dataset
 
-Images are collected from public datasets and user uploads. All data is centralized in an S3-compatible MinIO bucket, ensuring scalability, high availability, and seamless integration with the MLOps pipeline.
+Training images are collected from public datasets and user uploads. All data is centralized in an S3-compatible MinIO bucket, ensuring scalability, high availability, and seamless integration with the MLOps pipeline.
 
 The core dataset used in this project consists of RGB images labeled as either "dandelion" or "grass", intended for binary image classification, available at https://github.com/btphan95/greenr-airflow/tree/master/data.
 
@@ -88,7 +88,7 @@ A PostgreSQL database keeps track of all the processed images. The **plants_data
 | label       | Image class (`dandelion`/`grass`) |
 | url\_s3     | Full MinIO path to the image      |
 
-To access the database using cli, start with accessing the postgres container id : 
+To access the database using cli, start with identifying the PostgreSQL container id : 
 
 ```bash
 docker ps
@@ -105,7 +105,7 @@ List all tables :
 \dt
 ```
 
-Do a SQL request, for example to list the stored images : 
+Then you can a SQL request, for example to list the stored images : 
 
 ```bash
 SELECT * FROM plants_data;
@@ -114,7 +114,7 @@ Plants_data table schema :
 
 ![Database schema](./images/sql_schema.png)
 
-Data base extract showing the core dataset (from the btphan95 git repo) and images stored from the Streamlit interactions : 
+Data base extract showing the core dataset (from the btphan95 git repo) and images stored from the Streamlit interactions (notice the difference in the "url_source" format): 
 
 ![Database extract](./images/db_extract.png)
 
@@ -221,12 +221,12 @@ The first dag is useful at the beginning to download the images to Minio and cre
 
 ![Dag1](./images/dag1.png)
 
-The last task triggers the training of the model with the downloaded images (2nd dag below).
+The last task triggers the training of the model with the downloaded images (second dag below).
 
 ![Dag1](./images/dag_train.png)
 
 
-Once per week, the 3rd dag (below) is triggered and  heck if there are more than 10 new images in the database. If there are less than 10, it skips the 2 last tasks, other wise it moves the new images in the training folder and triggers the training dag.
+Once per week, the third dag (below) is triggered and checks if there are more than 10 new images in the database. If there are less than 10, it skips the 2 last tasks, other wise it moves the new images in the training folder and triggers the training dag.
 
 ![Dag2](./images/dag2.png)
 
@@ -248,7 +248,8 @@ Structure of the /api folder:
     └──requirements.txt  # Requirements for the FastAPI module
 ```
 
-- Dev environment
+- Dev environment: 
+
 The API is accessible at the url : http://localhost:8000. A prediction can be made using the following command :
 
 ```bash
@@ -327,11 +328,11 @@ The Streamlit monitoring dashboard is set up to display page views and total pre
 
 ## 9. Production environment
 
-Production deployment involves deploying these services to a local Kubernetes cluster via Helm Chart. For stable, reusable, and versioned production, Helm is preferred over the `kubectl apply` approach. YAML files are developed using official charts compatible with different applications.
+The production deployment involves deploying these services to a local Kubernetes cluster via Helm Chart. For stable, reusable, and versioned production, Helm is preferred over the `kubectl apply` approach. YAML files are developed using official charts compatible with different applications.
 
 We chose the Docker-desktop cluster, which is provided by Docker Desktop and allows us to deploy directly without the need to define a virtual machine or other installations.
 
-### Installation Helm et les charts
+### Installation of Helm and Charts handling
 
 Install Helm following the guide https://helm.sh/fr/docs/intro/install/
 
@@ -439,6 +440,7 @@ helm status airflow -n airflow
 kubectl port-forward svc/myrelease-webserver 8080:8080 --namespace airflow
 ```
 ![airflow-release](./images/airflow-helm-release2.png)
+
 ![helm-releases](./images/helm-releases.png)
 
 Note: This production portion has yet to be deployed; the charts show conflicts between applications. If you borrow existing Docker images, the releases fail to be linked together to be able to retrieve the database and DAGs.
