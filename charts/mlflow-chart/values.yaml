@@ -1,0 +1,11 @@
+replicaCount: 1
+
+image:
+  repository: nnmp020395/mlops_classifiimage-mlflow-server
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  nodePort: 30000
+  port: 5000

@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-mlflow
+  labels:
+    app: mlflow
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: mlflow
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mlflow
+    spec:
+      containers:
+        - name: mlflow
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 6000
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - -f
+                - http://localhost:6000/health
+            failureThreshold: 3
+            periodSeconds: 10
+            timeoutSeconds: 5
