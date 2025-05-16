@@ -76,7 +76,7 @@ The training database is also dynamically enriched using images added through th
 
 ## 4. Storage
 
-### in PostgreSQL
+### - in PostgreSQL
 A PostgreSQL database keeps track of all the processed images. The **plants_data** table includes the following fields:
 
 | Column Name | Description                       |
@@ -86,7 +86,38 @@ A PostgreSQL database keeps track of all the processed images. The **plants_data
 | label       | Image class (`dandelion`/`grass`) |
 | url\_s3     | Full MinIO path to the image      |
 
-### in Minio Bucket: ```image-dandelion-grass```
+To access the database using cli, start with accessing the postgres container id : 
+
+```bash
+docker ps
+docker exec -it <postgres_container_id_or_name> bash
+```
+Connect to the airflow database
+```bash
+psql -U airflow -d airflow
+```
+
+List all tables : 
+
+```bash
+\dt
+```
+
+Do a SQL request,f for example to list the stored images : 
+
+```bash
+SELECT * FROM plants_data;
+```
+Plants_data table schema :
+
+![Database schema](./images/sql_schema.png)
+
+Data base extract showing the core dataset (from the btphan95 git repo) and images stored from the Streamlit interactions : 
+
+![Database extract](./images/db_extract.png)
+
+
+### - in Minio Bucket: ```image-dandelion-grass```
 
 MinIO is used as the central object store for both training/inference images and serialized model weights. It provides a lightweight, self-hosted, and S3-compatible storage solution integrated into the entire MLOps workflow.
 
@@ -115,6 +146,12 @@ A DAG in Airflow periodically checks for new validated images in corrected_data/
 
 ![Retrain model](./images/retrain_model_schema.png)
 
+
+Organisation of the ```/raw``` folder in MinIO :
+![Minio images folders](./images/minio_images.png)
+
+Organisation of the ```/model`` folder in MinIO :
+![Minio model folders](./images/minio_model.png)
 
 ## 5. Model training
 
@@ -361,8 +398,8 @@ docker build \
   -t mlops_classifiimage-airflow-custom:latest \
   -f Dockerfile.custom .
 docker tag mlops_classifiimage-airflow-custom \
-  your_docker_hub/mlops_classifiimage-airflow-custom:latest
-docker push your_docker_hub/mlops_classifiimage-airflow-custom:latest
+  nnmp020395/mlops_classifiimage-airflow-custom:latest
+docker push nnmp020395/mlops_classifiimage-airflow-custom:latest
 ```
 Then, move in the `airflow-chart`
 ```bash
@@ -374,7 +411,7 @@ helm install myrelease apache-airflow/airflow -f values.yaml --namespace airflow
 
 Given the deployment steps above, not only Airflow but Minio also require Docker images for deployment to Kubernetes. Repeat the above steps directly using the Dockerfile located in the `./api/Dockerfile.fastapi`, `./mlflow/Dockerfile.mlflow`, and `./streamlit/Dockerfile.streamlit` directories.
 
-The names of these images begin with <your_docker_hub/mlops_classifiimage-app-name>
+The names of these images begin with <mlops_classifiimage-app-name>
 
 The subsequent installation of releases is performed based on the helm.
 
@@ -402,9 +439,7 @@ kubectl port-forward svc/myrelease-webserver 8080:8080 --namespace airflow
 ![airflow-release](./images/airflow-helm-release2.png)
 ![helm-releases](./images/helm-releases.png)
 
-Note:
-- Assume that the name of image docker in every values.yaml is correct
-- This production portion has yet to be deployed; the charts show conflicts between applications. If you borrow existing Docker images, the releases fail to be linked together to be able to retrieve the database and DAGs.
+Note: This production portion has yet to be deployed; the charts show conflicts between applications. If you borrow existing Docker images, the releases fail to be linked together to be able to retrieve the database and DAGs.
 
 
 ## 10. Conclusion and next steps

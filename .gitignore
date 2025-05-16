@@ -194,3 +194,4 @@ helm-airflow/
 minio/data/
 mlruns/
 
+dags/
